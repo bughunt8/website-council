@@ -23,4 +23,6 @@ Exploratory cases include rapid example switching while data loads, changing exa
 
 ## Infrastructure acceptance
 
-Workflow completion is not domain acceptance. Confirm Pages release metadata, domain association status, DNS CNAME resolution, a valid HTTPS certificate, main HTML, and asset loading on `council.ronald.ng`.
+Seven deployment tests cover provider separation, isolated targets, a valid target fixture, unscoped callers/incorrect origins, dist-only non-destructive uploads, private OAC/scoped OIDC infrastructure, and exact canonical metadata. CI also pins `cfn-lint` for template schema checking.
+
+Workflow completion is not domain acceptance. Confirm staging Pages release metadata, production CloudFront release metadata, issued ACM certificate, Cloudflare DNS CNAME resolution, a valid HTTPS certificate, main HTML, and asset loading on `council.profitriseco.com`.

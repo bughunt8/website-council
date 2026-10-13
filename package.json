@@ -2,17 +2,17 @@
   "name": "website-council",
   "version": "1.0.0",
   "private": true,
-  "description": "Council at council.ronald.ng. A public Cloudflare-ready viewer and private local Roast Room runner.",
+  "description": "Council at council.profitriseco.com. Cloudflare staging, AWS production, and a private local Roast Room runner.",
   "type": "module",
   "scripts": {
     "start": "node app/server.mjs",
     "smoke": "node app/scripts/smoke.mjs",
     "build": "node scripts/build.mjs",
-    "check": "node --test tests/build.test.mjs",
+    "check": "node --test tests/*.test.mjs",
     "test": "npm run check && playwright test",
     "preview": "node scripts/serve.mjs",
     "deploy:staging": "wrangler pages deploy dist --project-name website-council-staging --branch main",
-    "deploy:production": "wrangler pages deploy dist --project-name website-council --branch main"
+    "deploy:production": "node scripts/deploy-aws.mjs"
   },
   "engines": { "node": ">=20" },
   "devDependencies": {

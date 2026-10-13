@@ -13,4 +13,4 @@ Describe the user-visible change and any upstream provenance update.
 
 ## Deployment
 
-State the exact revision, intended environment, and Pages/custom-domain receipts. Local tests are not a production-domain verification.
+State the exact revision, intended environment, staging Pages or production CloudFront receipts, and custom-domain HTTPS evidence. Local tests are not a production-domain verification.

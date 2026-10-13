@@ -14,7 +14,9 @@ Separate the static public viewer from the private Node/Claude Code execution pa
 
 ## Technology architecture
 
-Use Cloudflare Pages direct uploads driven by GitHub Actions. Keep Route53 authoritative DNS. Use independent staging and production Pages projects so staging cannot overwrite the production project. Cloudflare documents external-DNS subdomain support at https://developers.cloudflare.com/pages/configuration/custom-domains/.
+Use Cloudflare Pages direct uploads for staging and a dedicated AWS S3/CloudFront stack for production. Preserve the existing Cloudflare-authoritative `profitriseco.com` zone. The confirmed hostname is `council.profitriseco.com`. The staging/production hosting split follows `bughunt8/www-resume`, but none of its infrastructure resources or secrets are reused.
+
+AWS recommends OAC for private S3 origins at https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html. The production CloudFront certificate must be in ACM `us-east-1`, as documented at https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cnames-and-https-requirements.html. The bucket defaults operationally to the reference region `ap-east-1`; the template uses its selected stack region.
 
 ## Migration and governance
 

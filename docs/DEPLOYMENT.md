@@ -1,66 +1,98 @@
 # Deployment runbook
 
-## Targets
+## Confirmed targets
 
-| Environment | Branch | Cloudflare Pages project | Canonical host |
+| Environment | Branch | Hosting | Host |
 |---|---|---|---|
-| Staging | `staging` | `website-council-staging` | `website-council-staging.pages.dev` |
-| Production | `main` | `website-council` | `website-council.pages.dev`, then `council.ronald.ng` |
+| Staging | `staging` | Cloudflare Pages project `website-council-staging` | `website-council-staging.pages.dev` |
+| Production | `main` | Dedicated private S3 bucket and CloudFront distribution | Verified distribution hostname, then `council.profitriseco.com` |
 
-These are intended names, not a claim the remote projects exist. The initial handover status is in [QA.md](QA.md).
+This split follows https://github.com/bughunt8/www-resume. The canonical domain was explicitly confirmed on 2026-10-14 Asia/Hong_Kong. The earlier domain and Cloudflare-only production proposal are superseded. No existing website is being migrated.
 
-## Provision once
+`profitriseco.com` is already authoritative on Cloudflare. Keep its nameservers and other records unchanged. No Route53 zone or nameserver migration is needed.
 
-Create the two Pages direct-upload projects with production branch `main`. The staging workflow intentionally deploys the staging checkout to that separate project's main branch, so the staging canonical pages.dev host points to the current staging build.
+## Cloudflare staging
 
-Create GitHub environments `staging` and `production`. For each, configure:
+Create only the `website-council-staging` Pages direct-upload project with production branch `main`. The staging workflow uploads the staging checkout to that separate project's main branch so its canonical pages.dev hostname tracks staging.
 
-- Secret `CLOUDFLARE_API_TOKEN`, scoped to Account / Cloudflare Pages / Edit for the intended account.
-- Variable `CLOUDFLARE_ACCOUNT_ID`.
-- Variable `PAGES_PROJECT`, exactly the project name in the table.
+GitHub environment `staging` requires:
 
-The reusable workflow fails closed on missing settings and refuses an environment-to-project mismatch. Values from the old repository's Hostinger environments are not applicable. GitHub secrets cannot be read back or copied from another repo; provision the new environments through the provider's secure controls.
+- Secret `CLOUDFLARE_API_TOKEN`, with Account / Cloudflare Pages / Edit for the authorized account.
+- Variable `CLOUDFLARE_ACCOUNT_ID`, now populated from the authorized `profitriseco.com` zone metadata.
+- Variable `PAGES_PROJECT=website-council-staging`.
 
-For a manual operator deployment:
+The saved DNS/tunnel credential can read the domain's DNS but was denied Pages access. Do not repurpose it as a Pages token or broaden its scope without authorization. The staging workflow fails closed until a suitable token is securely provisioned.
 
 ```sh
 npm ci
-npm run build
+COUNCIL_STAGING=1 npm run build
 npm run deploy:staging
 ```
 
-Do not paste API tokens into commands or source files. Configure Wrangler through secure environment handling or use an approved credential proxy.
+Use secure Wrangler credentials. Never paste token values into source, issues, logs, or commands.
 
-## Promotion
+## AWS production bootstrap
 
-Push changes to `staging`. The staging pipeline validates the exact commit before deploying. Check CI and the staging website. Open a PR from staging to main with a human or approved automation identity:
+An authorized operator provisions new Council resources in the intended AWS account. The reference uses `ap-east-1` for the S3 origin. Do not reuse the reference website's bucket, distribution, role, or stored access keys.
+
+1. Confirm the account, region, and absence of conflicting Council resource names.
+2. Confirm the account has the GitHub OIDC provider `token.actions.githubusercontent.com`, audience `sts.amazonaws.com`. Create it only if absent; do not replace a shared provider.
+3. Review `infrastructure/aws-production.json` and create the initial stack without a custom domain:
+
+   ```sh
+   aws cloudformation deploy \
+     --template-file infrastructure/aws-production.json \
+     --stack-name website-council-production \
+     --region ap-east-1 \
+     --capabilities CAPABILITY_NAMED_IAM \
+     --no-execute-changeset
+   ```
+
+4. Review the actual change set and approve execution. The template creates only a dedicated bucket, CloudFront/OAC/cache/header policies, bucket policy, and a Council deployment role. It does not manage DNS.
+5. Wait for CloudFront `Deployed`. Record stack outputs in GitHub environment `production`:
+
+   - `AWS_REGION`: actual stack region.
+   - `AWS_ROLE_ARN`: output `AWSRoleArn`.
+   - `S3_BUCKET`: output `S3Bucket`.
+   - `CLOUDFRONT_DISTRIBUTION_ID`: output `CloudFrontDistributionId`.
+   - `AWS_SITE_URL`: output `AWSSiteURL`.
+   - `CUSTOM_DOMAIN_ACTIVE=false` until real-domain qualification.
+
+The OIDC role trusts only `repo:bughunt8/website-council:environment:production`. It can read/write this bucket and invalidate/read this distribution. It cannot delete objects, change infrastructure, change DNS, manage certificates, or write another site's bucket. GitHub's production environment allows only `main`.
+
+The bucket blocks public access, enforces TLS and bucket ownership, encrypts with SSE-S3, and keeps versions. OAC permits CloudFront read access only for this distribution. AWS's OAC documentation is https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html.
+
+## Promotion and deployment
+
+Validate and qualify the actual Cloudflare staging host before opening or merging a staging-to-main promotion PR. Do not bypass the open PR just because local tests pass.
 
 ```sh
 gh pr create --repo bughunt8/website-council --base main --head staging \
-  --title "Promote Council staging" --body "Tested staging revision. Review deployment and QA evidence."
+  --title "Promote Council staging" --body "Tested staging revision. Review QA and hosting receipts."
 ```
 
-The B1 workflow also opens this PR if `PROMOTION_TOKEN` is configured as a fine-grained token with contents/read and pull-requests/write. It fails without that token, rather than relying on PR events suppressed by `GITHUB_TOKEN`.
+Merging triggers B2, which reruns validation and calls the AWS-only production workflow. It assumes the scoped OIDC role, validates branch/resource ownership, uploads only `dist/`, excludes Cloudflare metadata, waits for invalidation, and verifies the distribution's exact `release.json` SHA. No S3 `--delete` is used.
 
-Merging the PR triggers B2 production. Both deployment pipelines rerun reusable validation, build the checked-out SHA, deploy through their matching GitHub environment, and fetch `release.json` to prove the Pages host serves that SHA.
+The B1 workflow can open a promotion PR if `PROMOTION_TOKEN` is securely configured. Otherwise use the human `gh` workflow; do not rely on `GITHUB_TOKEN` to trigger PR checks.
 
-## Custom domain
+## Production certificate and DNS
 
-Cloudflare's documentation allows a subdomain using external authoritative DNS. No nameserver migration is required. See https://developers.cloudflare.com/pages/configuration/custom-domains/.
+1. Request an ACM public certificate for `council.profitriseco.com` in `us-east-1`. CloudFront requires that region: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cnames-and-https-requirements.html.
+2. Add only the AWS-provided certificate-validation CNAME in the existing Cloudflare zone, DNS-only. Wait for ACM `ISSUED`.
+3. Update the reviewed production stack with `CertificateArn=<issued ARN>` and `EnableCustomDomain=true`, preserving other parameters. This attaches the certificate and exact alternate domain.
+4. Wait for the distribution update to finish, then add only:
 
-1. Associate `council.ronald.ng` with the production `website-council` Pages project through its custom-domain setup.
-2. At authoritative Route53, create only this new record:
+   `council.profitriseco.com. 300 IN CNAME <verified-distribution>.cloudfront.net.`
 
-   `council.ronald.ng. 300 IN CNAME website-council.pages.dev.`
+5. Keep this record DNS-only, unproxied, so CloudFront remains the production CDN as in the reference. A later Cloudflare proxy layer would be a separate architecture change, not an implicit part of this deployment.
+6. Check for conflicting hostname records and preserve existing CAA policy. Do not change apex, mail, or other Profit Rise records.
+7. Verify public/authoritative DNS, valid HTTPS certificate, site title, assets, security headers, and exact release SHA at `https://council.profitriseco.com/`.
+8. Set `CUSTOM_DOMAIN_ACTIVE=true` only after successful qualification so future deployments verify both the CloudFront hostname and the real domain.
 
-3. Do not change apex, mail, `skills`, `resume`, `aigc`, or other records.
-4. Wait for Pages domain activation and certificate issuance.
-5. Verify authoritative DNS, HTTPS, the site title, assets, and exact `release.json` revision at `https://council.ronald.ng/`.
+DNS access is available through the approved domain credential. ACM and CloudFront still require authorized AWS access. Do not create a CNAME pointing at an invented or unqualified distribution.
 
-Adding only the DNS CNAME without the Pages association can produce a 522 error. Restrictive CAA records can also block certificate issuance. Inspect rather than overwrite existing CAA policy.
+## Headers and rollback
 
-## Security and rollback
+Cloudflare staging uses `_headers`. AWS does not interpret that file; production protections live in the template's CloudFront response-headers policy. Cache minimum TTL is zero so release metadata can be uncached.
 
-Only deploy `dist/`. Do not enable the local API runner in Cloudflare. Staging builds block indexing and display a staging banner. Production and staging are separate projects and environment variable sets.
-
-Rollback by reverting the promotion on staging, rerunning tests, and promoting a reviewed revert to main. The Pages dashboard can also restore a prior production deployment; record its SHA and verify `release.json`. Never delete other Pages projects or modify unrelated domains to fix this site.
+Rollback by reverting on staging, validating, promoting a reviewed revert, and redeploying. Bucket versions provide recovery material but do not make rollback automatic. Do not destroy the stack or delete unrelated infrastructure to reverse a website release. Record the restored SHA and verify it at both production hosts.

@@ -17,6 +17,6 @@ Let public visitors understand a structured advisor debate, inspect its reasonin
 
 ## Explicit exclusions
 
-Public AI execution, public SSE, user accounts, multi-user session isolation, billing, CRM, analytics, user-session uploads, shared API keys, and production DNS changes outside `council.ronald.ng`.
+Public AI execution, public SSE, user accounts, multi-user session isolation, billing, CRM, analytics, user-session uploads, shared API keys, and production DNS changes outside `council.profitriseco.com` and its required ACM validation record.
 
 Running live public councils would require a separately approved service design, including authentication, spend limits, abuse prevention, session isolation, retention, and provider secrets.

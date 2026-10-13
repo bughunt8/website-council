@@ -1,6 +1,6 @@
 # Council
 
-A public decision room for `council.ronald.ng`, with a private local council runner. This is a public fork of [Roast Room by AI Automation Society](https://github.com/nateherkai/roast-room), pinned initially to `f5e7b631a172ecc8ef5488760654ad37f24204b0`.
+A public decision room for `council.profitriseco.com`, with a private local council runner. This is a public fork of [Roast Room by AI Automation Society](https://github.com/nateherkai/roast-room), pinned initially to `f5e7b631a172ecc8ef5488760654ad37f24204b0`.
 
 The web viewer replays three recorded upstream examples. It does not run AI on the public website, accept payments, collect accounts, save user briefs, or expose a paid API key. Its brief builder creates a command for a user's local Claude Code session. Those drafts remain in page memory until downloaded or copied.
 
@@ -13,7 +13,7 @@ The web viewer replays three recorded upstream examples. It does not run AI on t
 - A private brief builder for full or quick local councils.
 - Light/dark themes, keyboard navigation, responsive layouts, and self-hosted assets.
 
-The intended production domain is `council.ronald.ng`. Cloudflare hosting and custom-domain activation require separate infrastructure provisioning. A working local build or preview is not evidence that the production domain is live.
+The confirmed production domain is `council.profitriseco.com`. Staging uses Cloudflare Pages; production uses a dedicated AWS S3/CloudFront stack, ACM for HTTPS, and the existing Cloudflare-authoritative DNS zone. A working local build or preview is not evidence that the production domain is live.
 
 ```sh
 npm ci
@@ -21,7 +21,7 @@ npm run build
 npm run preview
 ```
 
-Open `http://127.0.0.1:4173`. Public-site development and Cloudflare deployment use Node.js 22 or newer, matching CI. The retained local runner can run on Node.js 20 without installing the development dependencies.
+Open `http://127.0.0.1:4173`. Public-site development uses Node.js 22 or newer, matching CI. The retained local runner can run on Node.js 20 without installing the development dependencies.
 
 ## Run a private council
 
@@ -51,12 +51,13 @@ The original local runner and `.claude/` skill are preserved. Claude Code subscr
 
 ## Architecture and operations
 
-The checks/staging/promotion structure follows [bughunt8/skills](https://github.com/bughunt8/skills). Its current Hostinger deployment is deliberately not copied. This project targets independent Cloudflare Pages projects.
+The checks/staging/promotion structure follows [bughunt8/skills](https://github.com/bughunt8/skills), while the hosting split follows the Cloudflare-staging/AWS-production reference in [bughunt8/www-resume](https://github.com/bughunt8/www-resume). Neither reference's credentials, buckets, or distribution is reused.
 
-- `staging` deploys to `website-council-staging`.
+- `staging` deploys to the isolated Cloudflare Pages project `website-council-staging`.
 - A reviewed promotion PR moves a tested revision into `main`.
-- `main` deploys to `website-council` through the `production` environment.
-- The intended Route53 record is `council.ronald.ng CNAME website-council.pages.dev`, after Cloudflare Pages has associated the custom domain.
+- `main` deploys to a dedicated private S3 bucket and CloudFront distribution through the `production` environment.
+- AWS deployment uses short-lived GitHub OIDC credentials, verifies resource ownership, and never syncs or deletes the repository root.
+- The production Cloudflare DNS record is a DNS-only CNAME from `council.profitriseco.com` to the verified CloudFront hostname. No Route53 or nameserver migration is needed for this domain.
 - No existing site or DNS record is changed by the build.
 
 The build publishes only `dist/`, assembled from `site/`, specific upstream assets, and three explicitly allowlisted examples. It never copies the repository root, `.env`, `.claude`, or local session directories into the public output.
@@ -69,7 +70,8 @@ The build publishes only `dist/`, assembled from `site/`, specific upstream asse
 - [TDD.md](docs/TDD.md): test inventory and acceptance gates.
 - [WIREFRAME.md](docs/WIREFRAME.md): responsive layout and state map.
 - [DESIGN.md](docs/DESIGN.md): visual identity, tokens, and accessibility.
-- [DEPLOYMENT.md](docs/DEPLOYMENT.md): Cloudflare provisioning, secrets, promotion, DNS, and rollback.
+- [DEPLOYMENT.md](docs/DEPLOYMENT.md): Cloudflare staging, AWS production, OIDC, certificates, DNS, and rollback.
+- [AWS production template](infrastructure/aws-production.json): private S3, CloudFront OAC, response headers, and scoped CI deployment role.
 - [UPSTREAM.md](docs/UPSTREAM.md): provenance, synchronization, and retained behavior.
 - [QA.md](docs/QA.md): verification evidence and outstanding infrastructure work.
 - [AGENTS.md](AGENTS.md): rules for future agents.

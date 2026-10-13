@@ -1,0 +1,166 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Dedicated Council private S3, CloudFront OAC, security headers, and GitHub OIDC deployment role. DNS stays in Cloudflare.",
+  "Parameters": {
+    "CertificateArn": {
+      "Type": "String",
+      "Default": "",
+      "AllowedPattern": "^$|^arn:aws:acm:us-east-1:[0-9]{12}:certificate/[a-z0-9-]+$",
+      "Description": "Optional validated us-east-1 ACM certificate for council.profitriseco.com."
+    },
+    "EnableCustomDomain": {
+      "Type": "String",
+      "Default": "false",
+      "AllowedValues": ["true", "false"],
+      "Description": "Enable only after the certificate is ISSUED. Cloudflare DNS is configured separately."
+    }
+  },
+  "Rules": {
+    "CertificateRequiredForCustomDomain": {
+      "Assertions": [{
+        "Assert": {"Fn::Or": [{"Fn::Equals": [{"Ref": "EnableCustomDomain"}, "false"]}, {"Fn::Not": [{"Fn::Equals": [{"Ref": "CertificateArn"}, ""]}]}]},
+        "AssertDescription": "The custom domain requires a validated ACM certificate in us-east-1."
+      }]
+    }
+  },
+  "Conditions": {
+    "WithCustomDomain": {"Fn::Equals": [{"Ref": "EnableCustomDomain"}, "true"]}
+  },
+  "Resources": {
+    "SiteBucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "BucketName": {"Fn::Sub": "website-council-production-${AWS::AccountId}-${AWS::Region}"},
+        "PublicAccessBlockConfiguration": {"BlockPublicAcls": true, "BlockPublicPolicy": true, "IgnorePublicAcls": true, "RestrictPublicBuckets": true},
+        "OwnershipControls": {"Rules": [{"ObjectOwnership": "BucketOwnerEnforced"}]},
+        "BucketEncryption": {"ServerSideEncryptionConfiguration": [{"ServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]},
+        "VersioningConfiguration": {"Status": "Enabled"},
+        "Tags": [{"Key": "Application", "Value": "website-council"}, {"Key": "Environment", "Value": "production"}]
+      }
+    },
+    "OriginAccessControl": {
+      "Type": "AWS::CloudFront::OriginAccessControl",
+      "Properties": {
+        "OriginAccessControlConfig": {
+          "Name": {"Fn::Sub": "${AWS::StackName}-oac"},
+          "OriginAccessControlOriginType": "s3",
+          "SigningBehavior": "always",
+          "SigningProtocol": "sigv4"
+        }
+      }
+    },
+    "CachePolicy": {
+      "Type": "AWS::CloudFront::CachePolicy",
+      "Properties": {
+        "CachePolicyConfig": {
+          "Name": {"Fn::Sub": "${AWS::StackName}-cache"},
+          "MinTTL": 0,
+          "DefaultTTL": 300,
+          "MaxTTL": 86400,
+          "ParametersInCacheKeyAndForwardedToOrigin": {
+            "EnableAcceptEncodingGzip": true,
+            "EnableAcceptEncodingBrotli": true,
+            "CookiesConfig": {"CookieBehavior": "none"},
+            "HeadersConfig": {"HeaderBehavior": "none"},
+            "QueryStringsConfig": {"QueryStringBehavior": "none"}
+          }
+        }
+      }
+    },
+    "ResponseHeaders": {
+      "Type": "AWS::CloudFront::ResponseHeadersPolicy",
+      "Properties": {
+        "ResponseHeadersPolicyConfig": {
+          "Name": {"Fn::Sub": "${AWS::StackName}-headers"},
+          "SecurityHeadersConfig": {
+            "ContentSecurityPolicy": {"ContentSecurityPolicy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'self' https://www.perplexity.ai https://perplexity.ai", "Override": true},
+            "ContentTypeOptions": {"Override": true},
+            "ReferrerPolicy": {"ReferrerPolicy": "strict-origin-when-cross-origin", "Override": true},
+            "StrictTransportSecurity": {"AccessControlMaxAgeSec": 31536000, "IncludeSubdomains": false, "Preload": false, "Override": true}
+          },
+          "CustomHeadersConfig": {"Items": [{"Header": "Permissions-Policy", "Value": "camera=(), microphone=(), geolocation=(), payment=()", "Override": true}]}
+        }
+      }
+    },
+    "Distribution": {
+      "Type": "AWS::CloudFront::Distribution",
+      "Properties": {
+        "DistributionConfig": {
+          "Comment": "website-council/production",
+          "Enabled": true,
+          "IPV6Enabled": true,
+          "HttpVersion": "http2",
+          "PriceClass": "PriceClass_All",
+          "DefaultRootObject": "index.html",
+          "Aliases": {"Fn::If": ["WithCustomDomain", ["council.profitriseco.com"], {"Ref": "AWS::NoValue"}]},
+          "ViewerCertificate": {"Fn::If": ["WithCustomDomain", {"AcmCertificateArn": {"Ref": "CertificateArn"}, "SslSupportMethod": "sni-only", "MinimumProtocolVersion": "TLSv1.2_2021"}, {"CloudFrontDefaultCertificate": true}]},
+          "Origins": [{
+            "Id": "council-s3",
+            "DomainName": {"Fn::GetAtt": ["SiteBucket", "RegionalDomainName"]},
+            "OriginAccessControlId": {"Ref": "OriginAccessControl"},
+            "S3OriginConfig": {"OriginAccessIdentity": ""}
+          }],
+          "DefaultCacheBehavior": {
+            "TargetOriginId": "council-s3",
+            "ViewerProtocolPolicy": "redirect-to-https",
+            "AllowedMethods": ["GET", "HEAD", "OPTIONS"],
+            "CachedMethods": ["GET", "HEAD"],
+            "Compress": true,
+            "CachePolicyId": {"Ref": "CachePolicy"},
+            "ResponseHeadersPolicyId": {"Ref": "ResponseHeaders"}
+          }
+        },
+        "Tags": [{"Key": "Application", "Value": "website-council"}, {"Key": "Environment", "Value": "production"}]
+      }
+    },
+    "BucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {"Ref": "SiteBucket"},
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {"Sid": "CloudFrontReadOnly", "Effect": "Allow", "Principal": {"Service": "cloudfront.amazonaws.com"}, "Action": "s3:GetObject", "Resource": {"Fn::Sub": "${SiteBucket.Arn}/*"}, "Condition": {"StringEquals": {"AWS:SourceArn": {"Fn::Sub": "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"}}}},
+            {"Sid": "DenyNonTLS", "Effect": "Deny", "Principal": "*", "Action": "s3:*", "Resource": [{"Fn::GetAtt": ["SiteBucket", "Arn"]}, {"Fn::Sub": "${SiteBucket.Arn}/*"}], "Condition": {"Bool": {"aws:SecureTransport": "false"}}}
+          ]
+        }
+      }
+    },
+    "DeployRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "website-council-production-deploy",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Principal": {"Federated": {"Fn::Sub": "arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com"}},
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {"StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com", "token.actions.githubusercontent.com:sub": "repo:bughunt8/website-council:environment:production"}}
+          }]
+        },
+        "Policies": [{
+          "PolicyName": "CouncilDeployOnly",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {"Effect": "Allow", "Action": ["s3:ListBucket", "s3:GetBucketLocation", "s3:GetBucketTagging"], "Resource": {"Fn::GetAtt": ["SiteBucket", "Arn"]}},
+              {"Effect": "Allow", "Action": ["s3:GetObject", "s3:PutObject"], "Resource": {"Fn::Sub": "${SiteBucket.Arn}/*"}},
+              {"Effect": "Allow", "Action": ["cloudfront:GetDistribution", "cloudfront:CreateInvalidation", "cloudfront:GetInvalidation"], "Resource": {"Fn::Sub": "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"}}
+            ]
+          }
+        }],
+        "Tags": [{"Key": "Application", "Value": "website-council"}]
+      }
+    }
+  },
+  "Outputs": {
+    "S3Bucket": {"Value": {"Ref": "SiteBucket"}},
+    "CloudFrontDistributionId": {"Value": {"Ref": "Distribution"}},
+    "AWSRoleArn": {"Value": {"Fn::GetAtt": ["DeployRole", "Arn"]}},
+    "AWSSiteURL": {"Value": {"Fn::Sub": "https://${Distribution.DomainName}"}},
+    "DNSCnameTarget": {"Value": {"Fn::GetAtt": ["Distribution", "DomainName"]}}
+  }
+}

@@ -14,7 +14,7 @@ All `.claude/` agents, advisor brains, source notes, scoring protocol, prompts, 
 
 ## Added
 
-The Council-branded `site/` public viewer, static build boundary, private browser brief builder, curated replay catalog, public PDF adaptation, accessibility/browser tests, Cloudflare workflows, and architecture/operations documents.
+The Council-branded `site/` public viewer, static build boundary, private browser brief builder, curated replay catalog, public PDF adaptation, accessibility/browser tests, Cloudflare staging and AWS production workflows, dedicated AWS infrastructure template, and architecture/operations documents. The hosting split follows https://github.com/bughunt8/www-resume while the delivery governance follows the skills repository.
 
 ## Refresh process
 
