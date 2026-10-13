@@ -1,12 +1,23 @@
 {
-  "name": "roast-room",
+  "name": "website-council",
   "version": "1.0.0",
   "private": true,
-  "description": "The Roast Room: seven AI advisors built from the public work of Bezos, Paul Graham, Hormozi, Gary Vaynerchuk, Dan Martell, Gino Wickman, and Buffett debate your decision in Claude Code, live around a table.",
+  "description": "Council at council.profitriseco.com. Cloudflare staging, AWS production, and a private local Roast Room runner.",
   "type": "module",
   "scripts": {
     "start": "node app/server.mjs",
-    "smoke": "node app/scripts/smoke.mjs"
+    "smoke": "node app/scripts/smoke.mjs",
+    "build": "node scripts/build.mjs",
+    "check": "node --test tests/*.test.mjs",
+    "test": "npm run check && playwright test",
+    "preview": "node scripts/serve.mjs",
+    "deploy:staging": "wrangler pages deploy dist --project-name website-council-staging --branch main",
+    "deploy:production": "node scripts/deploy-aws.mjs"
   },
-  "engines": { "node": ">=20" }
+  "engines": { "node": ">=20" },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
+    "@playwright/test": "^1.58.0",
+    "wrangler": "4.150.0"
+  }
 }

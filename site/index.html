@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f5ef">
+  <title>Council | Seven perspectives. One better decision.</title>
+  <meta name="description" content="Watch seven simulated business advisors debate a decision, challenge assumptions, and reach a scored verdict. An open-source project by Ronald Ng, adapted from Roast Room.">
+  <link rel="canonical" href="https://council.profitriseco.com/">
+  <meta property="og:title" content="Council | Put your decision on the table">
+  <meta property="og:description" content="Seven simulated advisors. The strongest objection. A scored verdict. Explore the public examples or run your own council privately.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://council.profitriseco.com/">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" type="module"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="staging-banner" id="staging-banner" hidden>Staging preview. Not the production website.</div>
+  <header class="header">
+    <a href="./" class="brand" aria-label="Council home">
+      <svg viewBox="0 0 36 36" fill="none" aria-hidden="true"><path d="M7 13L18 7l11 6v11l-11 6-11-6V13Z" stroke="currentColor" stroke-width="1.8"/><path d="M7 13l11 6 11-6M18 19v11" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="7" r="2.5" fill="currentColor"/><circle cx="7" cy="24" r="2.5" fill="currentColor"/><circle cx="29" cy="24" r="2.5" fill="currentColor"/></svg>
+      <span>Council<span class="brand-by">by Ronald Ng</span></span>
+    </a>
+    <nav aria-label="Main navigation">
+      <button type="button" class="nav-link active" id="nav-room">The room</button>
+      <button type="button" class="nav-link" id="nav-guide">How it works</button>
+      <a class="nav-link source-link" href="https://github.com/bughunt8/website-council" target="_blank" rel="noopener noreferrer">Source code <span aria-hidden="true">↗</span></a>
+    </nav>
+    <button class="icon-button" id="theme-toggle" type="button" aria-label="Switch to dark theme" title="Switch theme">◐</button>
+  </header>
+
+  <main id="main">
+    <section class="intro">
+      <div>
+        <p class="eyebrow"><span class="small-rule" aria-hidden="true"></span> An open-source decision room</p>
+        <h1>A better decision starts<br>with a disagreement.</h1>
+      </div>
+      <div class="intro-note"><p>Seven perspectives on the same hard call.<br>A debate, not another agreeable chatbot.</p><button type="button" class="text-button" id="prepare-button">Prepare your own decision <span aria-hidden="true">↗</span></button></div>
+    </section>
+
+    <section class="workspace" aria-label="Council example viewer">
+      <div class="room-column">
+        <div class="room-header"><span class="eyebrow">The council table</span><span class="mode-badge" id="room-status">Public example · ready to replay</span></div>
+        <div class="room" id="room">
+          <div class="room-label" aria-hidden="true">Good questions deserve a second opinion.</div>
+          <div class="advisors" id="advisors"></div>
+          <div class="table" aria-hidden="true"><div class="table-wordmark">COUNCIL<span>Think it through.</span></div></div>
+          <div class="speaker-card" id="speaker-card">
+            <p class="eyebrow" id="speaker-label">A seat for every blind spot</p>
+            <p id="speaker-text">Strategy. Product. Pricing. Attention.<br>People. Operations. Capital.</p>
+            <span class="speaker-hint" id="speaker-hint">Select an advisor to explore their perspective.</span>
+          </div>
+        </div>
+        <div class="transport">
+          <ol class="steps" aria-label="Replay chapters">
+            <li><button type="button" data-chapter="1" disabled><span>01</span> Openings</button></li>
+            <li><button type="button" data-chapter="2" disabled><span>02</span> Debate</button></li>
+            <li><button type="button" data-chapter="3" disabled><span>03</span> Vote</button></li>
+            <li><button type="button" data-chapter="verdict" disabled><span>04</span> Verdict</button></li>
+          </ol>
+          <div class="playback-actions" id="playback-actions" hidden>
+            <button class="small-button" type="button" id="pause-button">Pause</button>
+            <label class="sr-only" for="speed">Replay speed</label>
+            <select id="speed" aria-label="Replay speed"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option></select>
+            <button class="small-button" type="button" id="skip-button">Skip to verdict</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="decision-panel" aria-label="Example decision">
+        <div class="panel-top"><span class="eyebrow">On the table</span><span class="tiny-label">Example, not a live session</span></div>
+        <label for="session-select" class="sr-only">Choose an example council</label>
+        <select id="session-select" class="session-select" disabled><option>Loading examples…</option></select>
+        <h2 id="decision-title">Should I raise my prices?</h2>
+        <p class="decision-description" id="decision-description">Explore how the council tests a business decision, weighs the alternatives, and keeps the strongest objection in view.</p>
+        <div class="decision-facts" id="decision-facts"></div>
+        <div class="options-title">The options</div>
+        <div class="decision-options" id="decision-options"></div>
+        <div class="launch-actions" id="launch-actions">
+          <button class="primary-button" type="button" id="watch-button" disabled>Watch this council <span aria-hidden="true">→</span></button>
+          <p class="privacy-note">A recorded upstream example. No AI calls.<br>No sign-up. Nothing to pay.</p>
+        </div>
+        <div class="result-actions" id="result-actions" hidden><button class="primary-button" type="button" id="verdict-button">Read the verdict <span aria-hidden="true">→</span></button><button class="text-button" type="button" id="replay-button">Replay this council</button></div>
+        <p class="inline-error" id="load-error" role="alert" hidden></p>
+        <button class="text-button" type="button" id="retry-button" hidden>Try loading examples again</button>
+      </aside>
+    </section>
+
+    <section class="transcript-section" id="transcript-section" hidden aria-labelledby="transcript-title">
+      <div class="section-heading"><h2 id="transcript-title">The conversation</h2><span class="tiny-label">Select a contribution to read the full card</span></div>
+      <div class="transcript" id="transcript"></div>
+    </section>
+
+    <section class="principle-section">
+      <p class="eyebrow">Built for the decision, not the applause</p>
+      <div class="principle-copy"><h2>Keep the dissent.<br>Make the next move smaller.</h2><p>The council scores each option, challenges easy agreement, and preserves the minority report. You leave with conditions, a cheap test, and a reason to stop if the evidence changes.</p></div>
+      <div class="principle-foot"><span>7 simulated advisors</span><span>Up to 3 rounds of debate</span><span>A scored verdict, with conditions</span></div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-main"><span class="footer-brand">Council / Ronald Ng</span><div><a href="https://ronald.ng" target="_blank" rel="noopener noreferrer">About Ronald ↗</a><a href="https://github.com/bughunt8/website-council" target="_blank" rel="noopener noreferrer">GitHub ↗</a><button class="text-button" type="button" id="footer-guide">Run it privately ↗</button></div></div>
+    <p class="footer-disclaimer">These advisors are AI simulations informed by public work. They are not the named people, do not speak for them, and are not affiliated with or endorsed by them. Outputs are examples for critical thinking, not professional advice.</p>
+    <p class="attribution">Adapted from <a href="https://github.com/nateherkai/roast-room" target="_blank" rel="noopener noreferrer">Roast Room by AI Automation Society</a>. Code under the <a href="./LICENSE.txt">MIT license</a>. <a href="./THIRD_PARTY_NOTICES.txt">Third-party notices</a>.</p>
+  </footer>
+
+  <dialog id="advisor-dialog" aria-labelledby="advisor-dialog-title"><div class="dialog-top"><span class="eyebrow">Advisor perspective</span><button class="icon-button close-dialog" type="button" aria-label="Close advisor details">×</button></div><div id="advisor-body"></div></dialog>
+  <dialog id="verdict-dialog" class="wide-dialog" aria-labelledby="verdict-dialog-title"><div class="dialog-top"><span class="eyebrow">The council's verdict · recorded example</span><button class="icon-button close-dialog" type="button" aria-label="Close verdict">×</button></div><div id="verdict-body"></div><div class="dialog-bottom"><button class="primary-button" id="pdf-button" type="button">Download verdict PDF</button><button class="small-button" type="button" id="markdown-button">Download report</button><p class="inline-error" id="pdf-error" role="alert" hidden></p></div></dialog>
+  <dialog id="guide-dialog" aria-labelledby="guide-dialog-title"><div class="dialog-top"><span class="eyebrow">Your own council</span><button class="icon-button close-dialog" type="button" aria-label="Close guide">×</button></div><h2 id="guide-dialog-title">Public examples.<br>Private decisions.</h2><p>This website plays recorded examples. To run a new council, use the included Claude Code skill on your own machine. Your sessions stay local unless you choose to share them.</p><ol class="guide-list"><li>Clone the repository.<code>git clone https://github.com/bughunt8/website-council.git<br>cd website-council</code></li><li>Start the local room.<code>npm start</code>Open <code>http://localhost:4730</code>.</li><li>Open Claude Code in the same folder.<code>claude</code></li><li>Type <code>/roast-room</code> followed by your decision. Answer the Chair's questions, then watch the room.</li></ol><p class="helper">Claude Code and Node.js 20 or newer are required. Your Claude subscription's usage limits apply. Full councils use more of your allowance than <code>--quick</code>. The optional local API runner bills your own Anthropic account and is not enabled on this public site.</p><a class="text-button" href="https://github.com/bughunt8/website-council#run-a-private-council" target="_blank" rel="noopener noreferrer">Read the setup guide ↗</a></dialog>
+  <dialog id="brief-dialog" class="wide-dialog" aria-labelledby="brief-dialog-title"><div class="dialog-top"><span class="eyebrow">Prepare the brief</span><button class="icon-button close-dialog" type="button" aria-label="Close brief builder">×</button></div><h2 id="brief-dialog-title">Put the real decision on the table.</h2><p>This creates a command for your local Claude Code session, not an AI response. Your draft stays in this page's memory. It is not sent to a server or saved after you leave.</p><form id="brief-form"><div class="form-grid"><div class="form-field full"><label for="brief-decision">The decision *</label><textarea id="brief-decision" name="decision" rows="2" minlength="10" maxlength="1000" required placeholder="Should we launch a separate product or focus on our current service?"></textarea></div><div class="form-field full"><label for="brief-options">The options *</label><textarea id="brief-options" name="options" rows="2" maxlength="1000" required placeholder="One option per line. Include staying with the current approach."></textarea></div><div class="form-field"><label for="brief-numbers">Your numbers</label><textarea id="brief-numbers" name="numbers" rows="2" maxlength="600" placeholder="Revenue, cash, team size, close rate"></textarea></div><div class="form-field"><label for="brief-limits">Your limits</label><textarea id="brief-limits" name="limits" rows="2" maxlength="600" placeholder="Budget, deadline, founder time"></textarea></div><div class="form-field"><label for="brief-success">What success looks like</label><textarea id="brief-success" name="success" rows="2" maxlength="600" placeholder="A measurable outcome, and by when"></textarea></div><div class="form-field"><label for="brief-lean">Which way you're leaning</label><textarea id="brief-lean" name="lean" rows="2" maxlength="600" placeholder="Your preferred option, and why"></textarea></div></div><label class="checkbox-label"><input id="brief-quick" type="checkbox"> Quick council, four advisors and two rounds</label><button type="submit" class="primary-button">Create my local command →</button></form><div id="brief-output" hidden><label for="brief-command">Paste this into Claude Code</label><textarea id="brief-command" readonly rows="6"></textarea><div class="dialog-bottom"><button type="button" class="primary-button" id="copy-command">Copy command</button><button type="button" class="small-button" id="download-command">Download brief</button></div><p class="helper" id="copy-feedback" role="status"></p></div></dialog>
+  <div class="sr-only" id="status-message" role="status" aria-live="polite"></div>
+  <noscript><p class="noscript-note">Council needs JavaScript to replay recorded sessions. The <a href="https://github.com/bughunt8/website-council">repository</a> contains the complete example reports and the private local runner.</p></noscript>
+</body>
+</html>

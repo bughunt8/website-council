@@ -1,0 +1,19 @@
+name: A2 Council staging
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: council-staging
+  cancel-in-progress: true
+jobs:
+  validate:
+    uses: ./.github/workflows/s1-validate.yml
+  deploy:
+    needs: validate
+    uses: ./.github/workflows/s2-deploy.yml
+    with:
+      environment: staging
+    secrets: inherit

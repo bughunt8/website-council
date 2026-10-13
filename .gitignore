@@ -1,6 +1,12 @@
 .env
 node_modules/
 .DS_Store
+dist/
+test-results/
+playwright-report/
+.wrangler/
+.env.*
+!.env.example
 
 # your councils stay on your machine; the examples ship with the repo
 sessions/*

@@ -1,0 +1,33 @@
+name: S1 Council validation
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  validate:
+    name: Council gates passed
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Lint the dedicated AWS template
+        run: |
+          python -m pip install cfn-lint==1.57.2
+          cfn-lint --non-zero-exit-code error infrastructure/aws-production.json
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: council-test-failure-${{ github.run_id }}
+          path: |
+            playwright-report/
+            test-results/

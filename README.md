@@ -1,98 +1,92 @@
-# Roast Room
+# Council
 
-![The Roast Room](docs/room.jpg)
+A public decision room for `council.profitriseco.com`, with a private local council runner. This is a public fork of [Roast Room by AI Automation Society](https://github.com/nateherkai/roast-room), pinned initially to `f5e7b631a172ecc8ef5488760654ad37f24204b0`.
 
-Bring a hard business decision and seven AI advisors argue it out, then hand you a scored verdict and a one-click PDF. The seats are Jeff Bezos, Paul Graham, Alex Hormozi, Gary Vaynerchuk, Dan Martell, Gino Wickman, and Warren Buffett, each built from that person's public work: their letters, essays, talks, and videos. The council runs in Claude Code, and a small local web app shows them around a table talking it through.
+The web viewer replays three recorded upstream examples. It does not run AI on the public website, accept payments, collect accounts, save user briefs, or expose a paid API key. Its brief builder creates a command for a user's local Claude Code session. Those drafts remain in page memory until downloaded or copied.
 
-| Seat | Pillar | The question they own |
-|---|---|---|
-| Jeff Bezos | Strategy and decisions | Is this the right bet, and how reversible is it? |
-| Paul Graham | Product and startups | Do people actually want this, and is it growing? |
-| Alex Hormozi | Offers, pricing, and sales | Will people pay, how much, and how do we close? |
-| Gary Vaynerchuk | Marketing and attention | Where does the attention come from? |
-| Dan Martell | People, hiring, and founder time | Who does this, and what does it cost your calendar? |
-| Gino Wickman | Operations and scaling | Can the business run this without you holding it together? |
-| Warren Buffett | Money and capital | What does it do to cash, risk, and long-term value? |
+## Public website
 
-## What you need
+- Seven illustrated simulated advisors, with their original source notes.
+- Recorded example replay, pause/resume, speed control, chapter navigation, and verdict skip.
+- Complete advisor contribution cards, option scores, dissent, conditions, and next steps.
+- Downloadable verdict PDF and Markdown report, generated in the browser.
+- A private brief builder for full or quick local councils.
+- Light/dark themes, keyboard navigation, responsive layouts, and self-hosted assets.
 
-- [Claude Code](https://claude.com/claude-code). Your Claude plan covers it; no API key needed.
-- [Node.js](https://nodejs.org) 20 or newer, for the room. There's nothing to install beyond that.
+The confirmed production domain is `council.profitriseco.com`. Staging uses Cloudflare Pages; production uses a dedicated AWS S3/CloudFront stack, ACM for HTTPS, and the existing Cloudflare-authoritative DNS zone. A working local build or preview is not evidence that the production domain is live.
 
-## Setup
-
-```bash
-git clone https://github.com/nateherkai/roast-room.git
-cd roast-room
+```sh
+npm ci
+npm run build
+npm run preview
 ```
 
-Or open Claude Code anywhere and say: "Clone github.com/nateherkai/roast-room and start the room for me."
+Open `http://127.0.0.1:4173`. Public-site development uses Node.js 22 or newer, matching CI. The retained local runner can run on Node.js 20 without installing the development dependencies.
 
-## Run a roast
+## Run a private council
 
-1. Start the room: `npm start`, then open http://localhost:4730. Leave it open.
-2. Open Claude Code in the same folder: `claude`
-3. Type `/roast-room` and your decision.
-4. Answer the Chair's questions, then watch the council argue it out in the room.
-5. When the verdict lands, click **Download PDF**.
+Requirements: Node.js 20 or newer and Claude Code.
 
-You also get a short verdict in Claude Code, and the full report lands in `sessions/<date>-<decision>/verdict.md`.
-
-## What to put in your question
-
-The council is only as good as what you give it. Include:
-
-- **The decision** in one line.
-- **Your options.** Two or three. "Keep doing what I do now" counts.
-- **Your numbers.** Revenue, cash, and team size.
-- **Your limits.** Deadline, hours, and budget.
-- **What success looks like**, and by when.
-- **Which way you're leaning**, and why. The council tests your lean instead of agreeing with it.
-
-Left something out? The Chair asks before the council starts. Example:
-
-```
-/roast-room I run a coaching business at $30k a month with 15 clients at $2,000 each.
-Should I raise to $3,500 for everyone, raise for new clients only, or keep $2,000?
-Close rate is about 50% and I have $40k in the bank. Success is $45k a month by March.
-I'm leaning toward raising for everyone because I'm underpaid.
+```sh
+git clone https://github.com/bughunt8/website-council.git
+cd website-council
+npm start
 ```
 
-More ways to run it:
+Open `http://localhost:4730`. In another terminal, from the same repository:
 
-- `/roast-room --quick ...` seats four advisors for two rounds. Use it for smaller, reversible calls. It uses far less of your plan.
-- `/roast-room --seats hormozi,buffett ...` seats only the advisors you name.
-- `/roast-room ask hormozi ...` gets one answer from one seat.
+```sh
+claude
+```
 
-The room is optional. The council runs the same in Claude Code without it.
+Then use:
 
-## Watch an example first
+```text
+/roast-room Should I raise my prices? My options are...
+/roast-room --quick Should I...
+/roast-room --seats hormozi,buffett Should I...
+```
 
-Run `npm start`, open http://localhost:4730, and click **Past sessions**. Three finished councils ship with the repo, so you can see how it works (and download their PDFs) before you run your own.
+The original local runner and `.claude/` skill are preserved. Claude Code subscription usage limits apply. Optional API mode uses a local `.env` and bills the user's Anthropic account. It is not connected to the static public website.
 
-## How it works
+## Architecture and operations
 
-- **The council runs in Claude Code.** Each seat is a sub-agent (`.claude/agents/council-*.md`) that reads its own brain (`.claude/skills/roast-room/brains/<name>/`): frameworks, principles, positions, stories, and voice notes compiled from public sources, with every quote tied to a source. Claude Code acts as the Chair. It runs the rounds, keeps score, and writes the verdict (`.claude/skills/roast-room/SKILL.md`).
-- **Each seat scores every option**, weighted by how much that seat's pillar matters to your decision. The Chair caps the verdict when a seat flags ruin risk, and it forces a real argument when everyone agrees too fast.
-- **The room only watches.** As the Chair works, it writes each step to `sessions/`, and the app plays those files back. Between rounds it shows which round is running, how long it has been, and what each advisor is weighing. The room makes no AI calls of its own.
-- **Every council is saved** in `sessions/`. Past sessions replays any of them and downloads its PDF.
-- **Usage:** a full council is 21 sub-agent runs, so it takes a real bite out of your plan's usage. Use `--quick` for small calls.
+The checks/staging/promotion structure follows [bughunt8/skills](https://github.com/bughunt8/skills), while the hosting split follows the Cloudflare-staging/AWS-production reference in [bughunt8/www-resume](https://github.com/bughunt8/www-resume). Neither reference's credentials, buckets, or distribution is reused.
 
-## Optional: let the room run councils itself
+- `staging` deploys to the isolated Cloudflare Pages project `website-council-staging`.
+- A reviewed promotion PR moves a tested revision into `main`.
+- `main` deploys to a dedicated private S3 bucket and CloudFront distribution through the `production` environment.
+- AWS deployment uses short-lived GitHub OIDC credentials, verifies resource ownership, and never syncs or deletes the repository root.
+- The production Cloudflare DNS record is a DNS-only CNAME from `council.profitriseco.com` to the verified CloudFront hostname. No Route53 or nameserver migration is needed for this domain.
+- No existing site or DNS record is changed by the build.
 
-If you'd rather type a decision straight into the room, copy `.env.example` to `.env`, add an `ANTHROPIC_API_KEY`, set `COUNCIL_RUNNER=api`, and restart `npm start`. That mode bills your Anthropic API account (about 25 calls per full council).
+The build publishes only `dist/`, assembled from `site/`, specific upstream assets, and three explicitly allowlisted examples. It never copies the repository root, `.env`, `.claude`, or local session directories into the public output.
 
-## What's inside
+## Document spine
 
-| Path | What |
-|---|---|
-| `.claude/skills/roast-room/` | The skill: protocol, prompts, scoring, report template, and the seven brains |
-| `.claude/agents/` | The seven seat agents |
-| `app/` | The room: a zero-dependency Node server, the web page, and the PDF builder |
-| `sessions/` | Your councils (kept out of git) and the three examples |
+- [PRD.md](docs/PRD.md): product behavior and exclusions.
+- [TRD.md](docs/TRD.md): build, privacy, replay, and runtime design.
+- [TOGAF-ADM.md](docs/TOGAF-ADM.md): architecture decisions and migration boundaries.
+- [TDD.md](docs/TDD.md): test inventory and acceptance gates.
+- [WIREFRAME.md](docs/WIREFRAME.md): responsive layout and state map.
+- [DESIGN.md](docs/DESIGN.md): visual identity, tokens, and accessibility.
+- [DEPLOYMENT.md](docs/DEPLOYMENT.md): Cloudflare staging, AWS production, OIDC, certificates, DNS, and rollback.
+- [AWS production template](infrastructure/aws-production.json): private S3, CloudFront OAC, response headers, and scoped CI deployment role.
+- [UPSTREAM.md](docs/UPSTREAM.md): provenance, synchronization, and retained behavior.
+- [QA.md](docs/QA.md): verification evidence and outstanding infrastructure work.
+- [AGENTS.md](AGENTS.md): rules for future agents.
+- [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md): attribution and licenses.
 
-## About the advisors
+## Tests
 
-These are simulations built from each person's public work. They are not the people, they don't speak for them, and none of them is affiliated with or endorses this project. A seat only quotes a person verbatim when the line is in its brain with a source, and `python .claude/skills/roast-room/scripts/check_quotes.py sessions/<session>` checks every quote in a council against the brains. Each brain's `sources.md` lists what it was built from.
+```sh
+npm run check
+npx playwright install chromium
+npm test
+```
 
-Built by AI Automation Society. The code is MIT licensed; see `LICENSE`. The PDF builder bundles [jsPDF](https://github.com/parallax/jsPDF) (MIT) and [Montserrat](https://github.com/JulietaUla/Montserrat) (SIL Open Font License); their licenses sit next to them in `app/public/`.
+Tests use recorded data, not a paid AI API. `npm run smoke` is the original paid local API smoke test and is not part of CI.
+
+## Attribution
+
+Copyright 2026 AI Automation Society for the upstream code, MIT licensed. The Council website is an adaptation by Ronald Ng. The original copyright, font licenses, jsPDF license, and advisor source notes are retained. The simulated advisors do not represent or speak for the named people and are not endorsed by them.

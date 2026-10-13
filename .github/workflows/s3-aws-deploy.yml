@@ -1,0 +1,44 @@
+name: S3 Council AWS production deploy
+on:
+  workflow_call:
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  deploy:
+    name: Publish Council to AWS and verify exact revision
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+      S3_BUCKET: ${{ vars.S3_BUCKET }}
+      CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+      AWS_SITE_URL: ${{ vars.AWS_SITE_URL }}
+      CUSTOM_DOMAIN_ACTIVE: ${{ vars.CUSTOM_DOMAIN_ACTIVE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Require production branch and configured AWS targets
+        run: |
+          test "$GITHUB_REF" = refs/heads/main
+          for name in AWS_REGION AWS_ROLE_ARN S3_BUCKET CLOUDFRONT_DISTRIBUTION_ID AWS_SITE_URL; do
+            test -n "${!name}" || { echo "::error::Missing production variable $name"; exit 1; }
+          done
+          [[ "$AWS_ROLE_ARN" =~ ^arn:aws:iam::[0-9]{12}:role/website-council-production-deploy$ ]] || \
+            { echo "::error::Role is not the dedicated Council production role"; exit 1; }
+      - name: Assume short-lived Council deployment role
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: council-${{ github.run_id }}
+          mask-aws-account-id: true
+      - run: npm ci
+      - run: npm run build
+      - name: Validate resource ownership, upload only dist, and verify HTTPS
+        run: npm run deploy:production
