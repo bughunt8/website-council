@@ -1,0 +1,36 @@
+name: B1 Council promote
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type promote to open the staging-to-main PR
+        type: string
+        required: true
+permissions:
+  contents: read
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: staging
+      - name: Require explicit confirmation and an event-capable token
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+          GH_TOKEN: ${{ secrets.PROMOTION_TOKEN }}
+        run: |
+          test "$CONFIRM" = promote || { echo "::error::Type promote"; exit 1; }
+          test -n "$GH_TOKEN" || { echo "::error::Set PROMOTION_TOKEN or open the promotion PR with gh as a human. GITHUB_TOKEN cannot trigger PR checks."; exit 1; }
+          sha="$(git rev-parse HEAD)"
+          conclusion="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${sha}/check-runs" \
+            --jq '[.check_runs[] | select(.name == "Council gates passed")] | sort_by(.completed_at) | last | .conclusion // "missing"')"
+          test "$conclusion" = success || { echo "::error::Staging head gates are not green"; exit 1; }
+          existing="$(gh pr list --repo "$GITHUB_REPOSITORY" --base main --head staging --state open --json number --jq '.[0].number // ""')"
+          if [ -n "$existing" ]; then
+            echo "Promotion PR already exists: $existing"
+          else
+            gh pr create --repo "$GITHUB_REPOSITORY" --base main --head staging \
+              --title "Promote Council staging" \
+              --body "Promote the tested staging revision ${sha}. This workflow does not write to main. Verify the staging site and infrastructure status before merging."
+          fi

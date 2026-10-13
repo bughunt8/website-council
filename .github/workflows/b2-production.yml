@@ -1,0 +1,19 @@
+name: B2 Council production
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: council-production
+  cancel-in-progress: false
+jobs:
+  validate:
+    uses: ./.github/workflows/s1-validate.yml
+  deploy:
+    needs: validate
+    uses: ./.github/workflows/s2-deploy.yml
+    with:
+      environment: production
+    secrets: inherit
