@@ -77,7 +77,10 @@ test("fits all supported viewport widths", async ({ page }) => {
       const cardTop = document.querySelector(".speaker-card").getBoundingClientRect().top;
       return [...document.querySelectorAll(".nameplate")].every((e) => e.getBoundingClientRect().bottom < cardTop);
     })).toBe(true);
+    expect(await page.locator(".advisor").evaluateAll((seats) => seats.every((e) => e.getBoundingClientRect().width >= 44 && e.getBoundingClientRect().height >= 44))).toBe(true);
     await expect(page.locator("#watch-button")).toBeVisible();
+    await page.locator("#watch-button").click();
+    expect(await page.evaluate(() => document.querySelector(".speaker-card").getBoundingClientRect().bottom <= document.querySelector(".room").getBoundingClientRect().bottom)).toBe(true);
   }
 });
 test("network errors have an explicit recovery action", async ({ page }) => {
