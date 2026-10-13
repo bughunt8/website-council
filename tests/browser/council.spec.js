@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 test("example replay reaches a real verdict and downloads a PDF and report", async ({ page }) => {
   const errors = []; page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/");
+  await page.goto("/"); await page.locator("#panel-demo").click();
   await expect(page.locator(".advisor")).toHaveCount(7);
   await page.getByRole("button", { name: /Watch this council/ }).click();
   await expect(page.locator(".contribution")).toHaveCount(1);
@@ -22,7 +22,7 @@ test("example replay reaches a real verdict and downloads a PDF and report", asy
   expect(errors).toEqual([]);
 });
 test("every example has a verdict, advisor cards, and functioning chapter navigation", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/"); await page.locator("#panel-demo").click();
   await expect(page.locator("#watch-button")).toBeEnabled();
   const values = await page.locator("#session-select option").evaluateAll((options) => options.map((o) => o.value));
   for (const id of values) {
@@ -43,7 +43,7 @@ test("every example has a verdict, advisor cards, and functioning chapter naviga
 });
 test("brief builder does not send private input to a server", async ({ page }) => {
   const posts = []; page.on("request", (r) => { if (r.method() === "POST") posts.push(r.url()); });
-  await page.goto("/");
+  await page.goto("/"); await page.locator("#panel-demo").click();
   await page.locator("#prepare-button").click();
   await page.getByLabel("The decision *", { exact: true }).fill("PRIVATE_QUESTION: Should we build another product?");
   await page.getByLabel("The options *", { exact: true }).fill("Build it\nStay focused");
@@ -56,7 +56,7 @@ test("brief builder does not send private input to a server", async ({ page }) =
 });
 test("themes, keyboard dialog escape, and accessibility", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/"); await page.locator("#panel-demo").click();
   await expect(page.locator(".advisor")).toHaveCount(7);
   for (const theme of ["light", "dark"]) {
     if (await page.locator("html").getAttribute("data-theme") !== theme) await page.locator("#theme-toggle").click();
@@ -71,7 +71,7 @@ test("themes, keyboard dialog escape, and accessibility", async ({ page }) => {
 test("fits all supported viewport widths", async ({ page }) => {
   for (const width of [320, 375, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto("/"); await expect(page.locator(".advisor")).toHaveCount(7);
+    await page.goto("/"); await page.locator("#panel-demo").click(); await expect(page.locator(".advisor")).toHaveCount(7);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     expect(await page.evaluate(() => {
       const cardTop = document.querySelector(".speaker-card").getBoundingClientRect().top;
@@ -85,7 +85,7 @@ test("fits all supported viewport widths", async ({ page }) => {
 });
 test("network errors have an explicit recovery action", async ({ page }) => {
   await page.route("**/data/catalog.json", (route) => route.abort());
-  await page.goto("/");
+  await page.goto("/"); await page.locator("#panel-demo").click();
   await expect(page.locator("#load-error")).toBeVisible();
   await expect(page.locator("#retry-button")).toBeVisible();
   await page.unroute("**/data/catalog.json"); await page.locator("#retry-button").click();

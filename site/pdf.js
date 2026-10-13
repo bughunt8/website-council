@@ -46,7 +46,7 @@ const dateLine = (id) => {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 };
 
-export async function downloadVerdictPdf({ setup, verdict: ev, byKey, id }) {
+export async function downloadVerdictPdf({ setup, verdict: ev, byKey, id, source = "Recorded example", evidenceHash }) {
   await loadLib();
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: "pt", format: "letter", compress: true });
@@ -116,7 +116,7 @@ export async function downloadVerdictPdf({ setup, verdict: ev, byKey, id }) {
   // ---------------------------------------------------------------- header
   font(15, "bold", C.ink); doc.text("COUNCIL", M, y + 12);
   font(8.5, "normal", C.mute); doc.text("by Ronald Ng", M, y + 25);
-  font(12, "bold", C.ink); doc.text("Recorded example", W - M, y + 12, { align: "right" });
+  font(12, "bold", C.ink); doc.text(source, W - M, y + 12, { align: "right" });
   font(8.5, "normal", C.mute); doc.text(`Verdict report · ${dateLine(id)}`, W - M, y + 25, { align: "right" });
   y += 40;
   doc.setDrawColor(...C.ink); doc.setLineWidth(1.2); doc.line(M, y, W - M, y);
@@ -213,7 +213,8 @@ export async function downloadVerdictPdf({ setup, verdict: ev, byKey, id }) {
   }
   if (v.fights?.length) { section("Where they fought"); for (const f of v.fights.slice(0, 3)) bullet(f.crux, f.story); }
   section("Provenance");
-  para("Recorded upstream example, not a new AI response. Adapted from Roast Room by AI Automation Society under the MIT license.", { size: 9, color: C.mute });
+  para(source === "Recorded example" ? "Recorded upstream example, not a new AI response. Adapted from Roast Room by AI Automation Society under the MIT license." : "Live profile-based company council. Review evidence, uncertainty, conditions, and dissent before acting. Application adapted from Roast Room under the MIT license.", { size: 9, color: C.mute });
+  if (evidenceHash) para(`Company evidence snapshot: ${evidenceHash}`, { size: 9, color: C.mute });
   para("https://github.com/nateherkai/roast-room", { size: 9, color: C.mute });
   para("https://github.com/bughunt8/website-council", { size: 9, color: C.mute });
 

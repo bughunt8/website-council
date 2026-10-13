@@ -11,13 +11,19 @@
     "check": "node --test tests/*.test.mjs",
     "test": "npm run check && playwright test",
     "preview": "node scripts/serve.mjs",
+    "start:service": "node service/server.mjs",
     "deploy:staging": "wrangler pages deploy dist --project-name website-council-staging --branch main",
-    "deploy:production": "node scripts/deploy-aws.mjs"
+    "deploy:production": "node scripts/backend-handoff.mjs"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.2",
     "@playwright/test": "^1.58.0",
     "wrangler": "4.150.0"
+  },
+  "dependencies": {
+    "jose": "6.2.1"
   }
 }

@@ -38,8 +38,8 @@ export function build() {
   }
   fs.copyFileSync(path.join(ROOT, "LICENSE"), path.join(out, "LICENSE.txt"));
   fs.copyFileSync(path.join(ROOT, "THIRD_PARTY_NOTICES.md"), path.join(out, "THIRD_PARTY_NOTICES.txt"));
-  let revision = "local";
-  try { revision = execFileSync("git", ["-C", ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).trim(); } catch {}
+  let revision = process.env.COUNCIL_BUILD_REVISION || "local";
+  if (!process.env.COUNCIL_BUILD_REVISION) try { revision = execFileSync("git", ["-C", ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).trim(); } catch {}
   const environment = process.env.COUNCIL_STAGING === "1" ? "staging" : "production";
   fs.writeFileSync(path.join(out, "release.json"), JSON.stringify({ name: "website-council", revision, publicExamples: EXAMPLES.length, mode: "public-static-viewer", canonicalHost: "council.profitriseco.com", environment }));
   if (process.env.COUNCIL_STAGING === "1") {

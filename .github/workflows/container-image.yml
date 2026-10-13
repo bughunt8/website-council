@@ -1,0 +1,56 @@
+name: Council Node execution candidate
+on:
+  push:
+    branches: [feat/live-service-containers]
+  workflow_dispatch:
+permissions: {contents: read, packages: write}
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build && node scripts/profile-bundle.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: council-profile-data-${{ github.sha }}
+          path: council-profiles.tar.gz
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        id: image
+        with:
+          context: .
+          push: true
+          build-args: REVISION=${{ github.sha }}
+          tags: ghcr.io/bughunt8/council:${{ github.sha }}
+          provenance: mode=max
+          sbom: true
+      - run: echo "Council candidate digest ${{ steps.image.outputs.digest }}; execution awaits runtime inputs and private Backend qualification."
+      - name: Boot real Node image with injected configuration and profiles, without paid execution
+        run: |
+          node -e "require('fs').writeFileSync('ci-runtime.json',JSON.stringify({executionEnabled:false,providerDisclosureApproved:false,access:{},models:{},limits:{maxConcurrent:1,runsPerUserPerDay:2,maxProviderCalls:25,maxContextChars:16000},brain:{url:'http://unused.test/mcp',sourceId:'profit-rise-company',requireSemanticReady:true}}))"
+          docker run -d --name council-ci -p 127.0.0.1:4730:4730 --read-only \
+            --tmpfs /tmp --tmpfs /var/lib/council:uid=1000,gid=1000,mode=0700 \
+            -v "$PWD/ci-runtime.json:/run/config/council.json:ro" \
+            -v "$PWD/profile-release:/run/profiles:ro" \
+            -e COUNCIL_CONFIG_FILE=/run/config/council.json \
+            -e COUNCIL_SESSIONS_DIR=/var/lib/council \
+            -e COUNCIL_SEATS_FILE=/run/profiles/seats.json \
+            -e COUNCIL_PROFILES_DIR=/run/profiles/brains \
+            -e COUNCIL_AGENTS_DIR=/run/profiles/agents \
+            -e COUNCIL_DEMO_DATA_DIR=/run/profiles/demo-data \
+            ghcr.io/bughunt8/council:${{ github.sha }}
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:4730/health && break || sleep 2; done
+          curl -fsS http://127.0.0.1:4730/api/status | jq -e '.kind == "live-node-service" and .executionEnabled == false'
+          curl -fsS http://127.0.0.1:4730/data/catalog.json | jq -e '.seats | length == 7'
+          docker exec council-ci sh -c 'test ! -d /app/.claude && test ! -d /app/dist/data'
+          docker rm -f council-ci

@@ -1,0 +1,12 @@
+import fs from "node:fs";
+import path from "node:path";
+import { execFileSync } from "node:child_process";
+const out = path.resolve("profile-release");
+fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(out);
+fs.cpSync(".claude/skills/roast-room/brains", path.join(out, "brains"), { recursive: true });
+fs.cpSync(".claude/agents", path.join(out, "agents"), { recursive: true });
+fs.copyFileSync("LICENSE", path.join(out, "LICENSE"));
+fs.copyFileSync(".claude/runtime-seats.json", path.join(out, "seats.json"));
+if (fs.existsSync("dist/data")) fs.cpSync("dist/data", path.join(out, "demo-data"), { recursive: true });
+execFileSync("tar", ["-czf", "council-profiles.tar.gz", "-C", out, "."]);
+console.log("Advisor prompt/data bundle prepared separately from the executable image. No company corpus included.");
