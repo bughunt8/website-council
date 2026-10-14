@@ -1,5 +1,7 @@
 # Council agent rules
 
+Implementation is paused. [HANDOVER](HANDOVER.md) records the candidate baseline, public runtime contract, dependencies and remaining acceptance. The private Backend handover owns operational inventory and recovery gaps. Do not copy its private contents into this public repository or treat handover as deployment approval.
+
 Read README and its full document spine. The service must execute profile discussions and conclude using authorized company memory. Do not downgrade it to a static replay site.
 
 - Work through feature/staging PRs; do not push to main.

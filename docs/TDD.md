@@ -1,28 +1,39 @@
 # Test-driven delivery
 
-## Automated gates
+The executing Node service is the acceptance target. Recorded replay and frontend preview tests remain useful but cannot qualify a company discussion, real memory retrieval or model execution.
 
-- Export exactly seven seats and three approved samples.
-- Plant an unrelated private example and prove it cannot be published.
-- Reject publishing repo internals and persistent browser storage.
-- Rebuild the same revision and compare replay bytes.
-- Exercise replay to verdict with pause/resume, chapters, PDF and report download.
-- Exercise every sample, advisor cards, and quick/full brief command.
-- Assert no POST request contains a private brief.
-- Run axe WCAG A/AA scans for both light and dark themes.
-- Check viewport fit at 320, 375, 768, 1024, and 1440 pixels.
-- Fail catalog loading and prove the recovery button works.
+## Automated candidate gates
 
-## QA inventory
+- Validate signed Access identity and approved users before paid calls. Reject missing/invalid identity, wrong origin, owner mismatch and caller model/source overrides.
+- Exercise attempt quotas, global concurrency, provider-call caps, timeouts and interrupted-session handling.
+- Retrieve source-bound evidence and reject crossed-source, stale, unconfirmed, withheld or semantically unqualified results.
+- Execute the retained engine with synthetic evidence through mocked transport. Assert the same evidence reaches every advisor/chair call and structured text blocks remain intact.
+- Persist/reload private owner sessions and per-execution usage without leaking another user's history.
+- Export only reviewed public profile/example data. Plant unrelated private material and prove build/catalog boundaries exclude it.
+- Test live-first submission, disconnected/disabled behavior, explicit example labels, advisor/verdict dialogs, replay controls, report/PDF output and theme.
+- Run axe checks, keyboard/dialog focus checks, reduced-motion behavior and responsive viewport checks.
+- Build the real image and boot with separately injected config/profiles, execution disabled. Verify health/catalog and absence of baked company/profile/demo data.
 
-The initial room must show seven advisors, the example label, the recorded-decision context, and the starting action. Inspect both themes at desktop and mobile widths.
+## Recorded evidence
 
-Check every meaningful control: main navigation, theme, advisor cards, sample selection, watch, pause/resume, replay speed, all available chapters, skip, verdict, PDF/report download, details expansion, dialog close/Escape, brief form, quick checkbox, command copy/fallback, and brief download.
+[Candidate checks](https://github.com/bughunt8/website-council/actions/runs/38450492060) passed 21 Node tests and seven browser tests. The engine test made 21 advisor and four chair requests against mocked provider transport with the same synthetic company evidence.
 
-Exploratory cases include rapid example switching while data loads, changing examples mid-replay, network failure/recovery, a missing illustration, and clipboard permission denial. No example may be described as a new live AI response.
+[Image CI](https://github.com/bughunt8/website-council/actions/runs/38450486614) built/published and booted the Node image with runtime inputs and no paid execution. These are candidate receipts, not production access or vector/model qualification.
+
+## Open adversarial and integration tests
+
+- Null/non-object JSON, multibyte/chunked oversized input and invalid upstream response redaction.
+- Actual pinned-GBrain MCP initialize/search/token behavior, source denial and bounded response size.
+- Complete vector readiness, source freshness/classification and immutable evidence behavior, rather than a finite cosine field alone.
+- Signed identity, issuer/audience, approved-user list, expired token and private session ownership on actual origins.
+- Vendor model IDs, bounded paid execution, cancellation, account currency limits and disclosure approval.
+- Process restart, interrupted jobs, session retention and no automatic paid restart.
+- Shared-state locking before any multi-replica deployment.
 
 ## Infrastructure acceptance
 
-Seven deployment tests cover provider separation, isolated targets, a valid target fixture, unscoped callers/incorrect origins, dist-only non-destructive uploads, private OAC/scoped OIDC infrastructure, and exact canonical metadata. CI also pins `cfn-lint` for template schema checking.
+Private Backend must separately prove reviewed digest/config resolution, nonroot file ownership, private package pull access, isolated data/config restore and fresh-host cloud-init recovery. It must verify Cloudflare application paths, machine-client MCP auth, old-connector fencing, exact DNS targets and rollback.
 
-Workflow completion is not domain acceptance. Confirm staging Pages release metadata, production CloudFront release metadata, issued ACM certificate, Cloudflare DNS CNAME resolution, a valid HTTPS certificate, main HTML, and asset loading on `council.profitriseco.com`.
+On `council.profitriseco.com`, accept actual HTTPS, Access, live request/SSE, company evidence hash, chair conclusion and owner-private history. Optional Pages metadata, a static S3 upload or workflow completion alone is insufficient.
+
+Implementation is paused. Do not run paid tests, disclose company evidence, migrate data or activate infrastructure simply to fill a test report. Obtain the relevant approval and attach actual receipts when work resumes.

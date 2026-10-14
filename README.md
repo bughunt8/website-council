@@ -38,7 +38,7 @@ Tests use synthetic/mocked model transport, not paid company-model calls. The re
 
 ## Handover
 
-Read [AGENTS](AGENTS.md), [PRD](docs/PRD.md), [TRD](docs/TRD.md), [TOGAF ADM](docs/TOGAF-ADM.md), [TDD](docs/TDD.md), [wireframe](docs/WIREFRAME.md), [design](docs/DESIGN.md), [deployment](docs/DEPLOYMENT.md), [QA](docs/QA.md), [upstream provenance](docs/UPSTREAM.md), and [third-party notices](THIRD_PARTY_NOTICES.md).
+Implementation is paused. Start with [HANDOVER](HANDOVER.md), then [AGENTS](AGENTS.md), [PRD](docs/PRD.md), [TRD](docs/TRD.md), [TOGAF ADM](docs/TOGAF-ADM.md), [TDD](docs/TDD.md), [wireframe](docs/WIREFRAME.md), [design](docs/DESIGN.md), [deployment](docs/DEPLOYMENT.md), [QA](docs/QA.md), [upstream provenance](docs/UPSTREAM.md), and [third-party notices](THIRD_PARTY_NOTICES.md).
 
 Cloudflare Pages is only an optional frontend preview. Production execution belongs to the private Backend's EC2/Tunnel platform. Container build, registry publication, runtime configuration, actual memory recall, paid model qualification and live-domain activation are separate receipts.
 
