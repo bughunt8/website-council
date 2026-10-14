@@ -1,27 +1,37 @@
-# Architecture decisions
+# Council architecture decisions
 
-## Vision
+This document replaces the earlier static-viewer architecture. The current candidate is the executing Node service in [PR 5](https://github.com/bughunt8/website-council/pull/5); implementation is paused and production acceptance remains open.
 
-Make the upstream decision method publicly inspectable without operating a paid, unauthenticated AI service.
+## Vision and business architecture
 
-## Business architecture
+An approved user submits a company decision, receives a profile-based discussion grounded in authorized company evidence and gets a chair conclusion. Public entry and source visibility must not expose private evidence or provide anonymous unbounded paid model use.
 
-Visitors explore public recorded examples and prepare their own local command. Ronald Ng's repository and portfolio are linked. There is no lead collection or transaction flow.
+The earlier recorded-viewer delivery did not satisfy the execution requirement. Optional examples are demonstrations, not a substitute for a new discussion. No affiliation or endorsement by simulated advisors is implied.
 
-## Application and data architecture
+## Application and information architecture
 
-Separate the static public viewer from the private Node/Claude Code execution path. Publish only reviewed upstream examples. Preserve the upstream brains and council protocol in git, but not in website output.
+The browser calls Council's Node service. Before cost, the service validates identity, approved user, origin, brief, usage limits and disclosure approval. It retrieves a read-scoped company evidence pack from private Brain, hashes it and supplies the same evidence to all advisors and the chair.
+
+The service streams rounds/votes/conclusion and persists sessions privately by owner. It does not automatically write its conclusions into company knowledge. Private source documents, vectors, credentials and sessions do not enter public repositories or example catalogs.
+
+Brain is the official pinned GBrain executable plus a private provenance-linked wiki and dedicated Postgres/pgvector. Actual semantic retrieval and scoped OAuth are production qualification steps, not proven by keyword-only tests.
 
 ## Technology architecture
 
-Use Cloudflare Pages direct uploads for staging and a dedicated AWS S3/CloudFront stack for production. Preserve the existing Cloudflare-authoritative `profitriseco.com` zone. The confirmed hostname is `council.profitriseco.com`. The staging/production hosting split follows `bughunt8/www-resume`, but none of its infrastructure resources or secrets are reused.
+Private Backend owns one EC2 with separate prebuilt containers for CMO, Admin, Council and Brain, separate databases and external state volumes. Cloudflare Tunnel/Access handles reviewed subdomain ingress. Council's final hostname is `council.profitriseco.com`.
 
-AWS recommends OAC for private S3 origins at https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html. The production CloudFront certificate must be in ACM `us-east-1`, as documented at https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cnames-and-https-requirements.html. The bucket defaults operationally to the reference region `ap-east-1`; the template uses its selected stack region.
+EC2 runs Node orchestration; the current adapter requests inference from Anthropic. Profiles contain instructions/data, not model weights. S3 is an optional private versioned recovery store and cannot run the service. Cloudflare Pages is optional frontend preview only.
 
-## Migration and governance
+Images contain executable code and production dependencies. Runtime mounts supply approved identity/model configuration, advisor profiles, company knowledge, secrets and persistent state. Private Backend automates CloudFormation, scripts and fresh-host cloud-init recovery. That recovery is not yet rehearsed end to end.
 
-Fork upstream with full attribution. Build and test on staging. Promote by PR, deploy the exact main revision, then validate release metadata and custom-domain HTTPS separately. No existing website is migrated.
+## Migration and implementation governance
 
-## Change management
+Use feature PRs into staging, then reviewed promotion. [PR 1](https://github.com/bughunt8/website-council/pull/1) references the older staging design and must not precede the live-service candidate. Candidate image publication is not authorization to change a host or route.
 
-Upstream refreshes arrive through feature PRs with pinned provenance, privacy checks, and replay tests. A future public live runner needs new architecture approval; it is not a configuration toggle on this website.
+Origin startup, database restoration and ingress cutover are separate gates. Preserve old data and fence incompatible connectors before switching traffic. Current operational state belongs in private Backend, not public documentation.
+
+## Change management and acceptance
+
+Preserve pinned upstream provenance, licenses, identity checks, source boundaries and per-run evidence consistency on refreshes. New providers, local inference, horizontal scaling, public anonymous execution and automatic knowledge writeback need separate design/review.
+
+Read [HANDOVER](../HANDOVER.md) for current evidence and gaps. Production requires actual source/vector/model/access/restore acceptance and separate disclosure, spending and cutover approval. Static-hosting templates retained in this repo are historical, not current production authority.

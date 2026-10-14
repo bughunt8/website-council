@@ -5,6 +5,8 @@ dist/
 test-results/
 playwright-report/
 .wrangler/
+profile-release/
+council-profiles.tar.gz
 .env.*
 !.env.example
 

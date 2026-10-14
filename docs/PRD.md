@@ -1,22 +1,9 @@
 # Product requirements
 
-## Purpose
+This is an executing company council service, not a static replay website. An approved company user submits a decision, receives a discussion grounded in authorized Profit Rise memory, and gets a chair's conclusion with reasoning, dissent and conditions.
 
-Let public visitors understand a structured advisor debate, inspect its reasoning, and prepare a private local council. The website is a Ronald Ng open-source project adapted from Roast Room.
+The Node service runs profile-backed API requests, circulates arguments through rounds, streams output and persists sessions. Every model request receives the same frozen company evidence snapshot. Missing memory is a blocking condition, not permission to invent company facts.
 
-## Required behavior
+Provider keys, company corpus, OAuth state, profiles, config and sessions are external runtime inputs. Examples are explicitly optional and never substituted for a failed execution.
 
-- Display seven simulated advisor portraits and source-note links.
-- Let users choose all three approved upstream examples.
-- Replay the actual recorded arguments with pause/resume, speed, chapters, and skip.
-- Show full contribution cards, option scores, conditions, minority objection, tests, and next steps.
-- Export a recorded verdict to PDF or Markdown in the browser.
-- Generate a local Claude Code brief command from a user's decision and context.
-- Keep private brief text in page memory. No transmission or persistence.
-- Work at 320, 375, 768, 1024, and 1440 CSS pixel widths, with light/dark modes and keyboard operation.
-
-## Explicit exclusions
-
-Public AI execution, public SSE, user accounts, multi-user session isolation, billing, CRM, analytics, user-session uploads, shared API keys, and production DNS changes outside `council.profitriseco.com` and its required ACM validation record.
-
-Running live public councils would require a separately approved service design, including authentication, spend limits, abuse prevention, session isolation, retention, and provider secrets.
+Require signed identity, user session isolation, request limits, per-user attempt quotas, global concurrency limit, provider-call ceiling and external-disclosure approval before costs. No unauthenticated paid execution, automatic publication, memory write-back, customer-tenant mixing, or arbitrary model/shell/tool execution.

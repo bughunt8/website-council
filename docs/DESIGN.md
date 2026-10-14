@@ -12,10 +12,12 @@ Do not add gradients, neon effects, emoji decoration, fabricated testimonials, o
 
 ## Accessibility
 
-Native buttons, selects, labels, dialogs, and details. All relevant form fields have visible labels. Focus indicators remain visible. The page includes a skip link and a polite replay status region. Named advisors remain identifiable independently of color.
+Native buttons, selects, labels, dialogs, and details. All relevant form fields have visible labels. Focus indicators remain visible. The page includes a skip link and a polite status region for live progress and optional replay. Named advisors remain identifiable independently of color.
 
 Light/dark modes share semantic tokens, not simple color inversion. Reduced-motion preferences disable transitions and smooth scrolling. WCAG contrast and modal focus are checked with browser tests.
 
 ## Content
 
-Use direct sentence-case copy. Public replay labels must remain clear. Advisor simulations and lack of endorsement must be stated. Scoring is a recorded judgment, not a calibrated probability.
+Use direct sentence-case copy. The primary path is an authenticated live discussion, with explicit disconnected, authorization, disabled, running and failure states. Public replay labels must remain clear and cannot substitute for failed execution.
+
+Advisor simulations and lack of endorsement must be stated. Scores and conclusions are model judgments, not calibrated probabilities or verified company facts. Keep private sessions/evidence out of public catalogs and static assets. See [wireframe](WIREFRAME.md) and [handover](../HANDOVER.md) for state requirements and remaining qualification.

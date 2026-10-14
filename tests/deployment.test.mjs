@@ -10,13 +10,15 @@ const fixture = () => ({
   tags: [{ Key: "Application", Value: "website-council" }, { Key: "Environment", Value: "production" }],
   distribution: { Id: "E1234567890123", Status: "Deployed", DomainName: "d123456789.cloudfront.net", DistributionConfig: { Comment: "website-council/production", Origins: { Items: [{ Id: "council-s3", DomainName: `${bucket}.s3.ap-east-1.amazonaws.com`, OriginAccessControlId: "E1234", OriginPath: "" }] } } },
 });
-test("Cloudflare is staging-only and AWS uses OIDC production", () => {
+test("frontend preview remains staging-only and executable activation belongs to Backend", () => {
   const pages = fs.readFileSync(".github/workflows/s2-deploy.yml", "utf8");
   const aws = fs.readFileSync(".github/workflows/s3-aws-deploy.yml", "utf8");
   assert.ok(pages.includes("Pages is staging-only"));
   assert.ok(aws.includes("id-token: write")); assert.ok(aws.includes("role-to-assume"));
   assert.ok(!aws.includes("aws-secret-access-key"));
-  assert.ok(fs.readFileSync(".github/workflows/b2-production.yml", "utf8").includes("s3-aws-deploy.yml"));
+  assert.ok(fs.readFileSync(".github/workflows/b2-production.yml", "utf8").includes("docker/build-push-action"));
+  assert.ok(!fs.readFileSync(".github/workflows/b2-production.yml", "utf8").includes("s3-aws-deploy.yml"));
+  assert.ok(JSON.parse(fs.readFileSync("package.json")).scripts["deploy:production"].includes("backend-handoff"));
 });
 test("production targets reject unrelated buckets, distributions, branches, and roles", () => {
   // Structural target checks do not contact AWS.

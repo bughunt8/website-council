@@ -4,6 +4,7 @@ import { SEATS, byKey, systemFor, parseCard, checkQuotes } from "./seats.mjs";
 import * as ai from "./anthropic.mjs";
 import { S } from "./anthropic.mjs";
 import { SESSIONS_DIR } from "./env.mjs";
+import crypto from "node:crypto";
 
 export const MODELS = {
   seat: process.env.SEAT_MODEL || "claude-sonnet-5-5",
@@ -24,7 +25,7 @@ function slugify(t) {
 }
 
 function newSession(prompt, mode) {
-  const id = `${new Date().toISOString().slice(0, 10)}-${Date.now().toString(36)}`;
+  const id = `${new Date().toISOString().slice(0, 10)}-${crypto.randomUUID()}`;
   const s = { id, prompt, mode, status: "running", events: [], subs: new Set(), started: Date.now(), state: {} };
   sessions.set(id, s);
   return s;
@@ -34,6 +35,7 @@ function emit(s, type, data = {}) {
   const ev = { type, t: Date.now() - s.started, ...data };
   // text deltas are streamed live but not stored one by one; the final card is stored
   if (type !== "delta") s.events.push(ev);
+  if (type !== "delta") s.onEvent?.(s, ev);
   const line = `data: ${JSON.stringify(ev)}\n\n`;
   for (const res of s.subs) res.write(line);
 }
@@ -301,7 +303,7 @@ async function runSeat(s, st, round, key, prompt) {
   let text = "";
   try {
     text = await ai.stream({
-      model: MODELS.seat, system: systemFor(key), maxTokens: 1400,
+      model: process.env[`COUNCIL_MODEL_${key.toUpperCase()}`] || MODELS.seat, system: systemFor(key), maxTokens: 1400,
       messages: [{ role: "user", content: prompt }],
       onText: (d) => { text += d; emit(s, "delta", { round, seat: key, text: d }); },
     });
@@ -325,13 +327,28 @@ async function roundAll(s, st, round, promptFn) {
 }
 
 export function startCouncil(prompt, mode = "full") {
+  const s = createCouncil(prompt, mode);
+  executeCouncil(s).catch(() => {});
+  return s;
+}
+
+export function createCouncil(prompt, mode = "full", onEvent) {
   const s = newSession(prompt, mode);
-  run(s).catch((e) => {
+  s.onEvent = onEvent;
+  return s;
+}
+
+export async function executeCouncil(s, execution = {}) {
+  try {
+    await ai.withExecutionContext(execution, () => run(s));
+  } catch (e) {
     s.status = "error";
-    emit(s, "error", { error: String(e.message || e) });
-    for (const res of s.subs) res.write(`data: ${JSON.stringify({ type: "end" })}\n\n`);
+    emit(s, "error", { error: execution.safeErrors ? "Council execution failed. The partial run is preserved; no automatic retry will start a new council." : String(e.message || e) });
+    for (const res of s.subs) { res.write(`data: ${JSON.stringify({ type: "end" })}\n\n`); res.end?.(); }
     save(s);
-  });
+    throw e;
+  }
+  s.onEvent?.(s, { type: "end" });
   return s;
 }
 
@@ -390,8 +407,8 @@ async function run(s) {
   st.verdict = { ...v, recommended, scores: finalScores, spread: spreadF, confidence, support, votes, disclaimer: DISCLAIMER };
   emit(s, "verdict", { verdict: st.verdict, seats: verdictSeats(st, last) });
   s.status = "done";
-  emit(s, "usage", { usage: ai.usage });
-  for (const res of s.subs) res.write(`data: ${JSON.stringify({ type: "end" })}\n\n`);
+  emit(s, "usage", { usage: ai.currentUsage() });
+  for (const res of s.subs) { res.write(`data: ${JSON.stringify({ type: "end" })}\n\n`); res.end?.(); }
   save(s);
 }
 

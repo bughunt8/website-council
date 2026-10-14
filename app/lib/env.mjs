@@ -7,12 +7,13 @@ export const APP_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)
 // student repo (app/ beside .claude/). The kit has .claude one level up.
 const KIT = fs.existsSync(path.join(APP_ROOT, "..", ".claude", "skills", "roast-room"));
 export const REPO_ROOT = KIT ? path.resolve(APP_ROOT, "..") : path.resolve(APP_ROOT, "..", "..");
-export const BRAINS_DIR = path.join(REPO_ROOT, ".claude", "skills", "roast-room", "brains");
-export const AGENTS_DIR = path.join(REPO_ROOT, ".claude", "agents");
-export const SESSIONS_DIR = KIT ? path.join(REPO_ROOT, "sessions") : path.join(REPO_ROOT, "projects", "founder-council", "sessions");
+export const BRAINS_DIR = process.env.COUNCIL_PROFILES_DIR || path.join(REPO_ROOT, ".claude", "skills", "roast-room", "brains");
+export const AGENTS_DIR = process.env.COUNCIL_AGENTS_DIR || path.join(REPO_ROOT, ".claude", "agents");
+export const SESSIONS_DIR = process.env.COUNCIL_SESSIONS_DIR || (KIT ? path.join(REPO_ROOT, "sessions") : path.join(REPO_ROOT, "projects", "founder-council", "sessions"));
 
 let cache = null;
 export function env(key) {
+  if (process.env[`${key}_FILE`]) return fs.readFileSync(process.env[`${key}_FILE`], "utf8").trim();
   if (process.env[key]) return process.env[key];
   if (!cache) {
     cache = {};

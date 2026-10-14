@@ -1,16 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
-import { AGENTS_DIR, BRAINS_DIR } from "./env.mjs";
+import { AGENTS_DIR, BRAINS_DIR, REPO_ROOT } from "./env.mjs";
 
-export const SEATS = [
-  { key: "bezos", name: "Jeff Bezos", short: "Bezos", initials: "JB", slug: "jeff-bezos", pillar: "Strategy and decisions", question: "Is this the right bet, and how reversible is it?", dimension: "Strategic fit and reversibility", color: "#e8a33d" },
-  { key: "graham", name: "Paul Graham", short: "Graham", initials: "PG", slug: "paul-graham", pillar: "Product and startups", question: "Is this something people actually want, and is it growing?", dimension: "Real demand and growth", color: "#f06b3f" },
-  { key: "hormozi", name: "Alex Hormozi", short: "Hormozi", initials: "AH", slug: "alex-hormozi", pillar: "Offers, pricing, and sales", question: "Will people pay, how much, and how do we close?", dimension: "Offer strength and unit economics", color: "#d94a6a" },
-  { key: "garyvee", name: "Gary Vaynerchuk", short: "Gary V", initials: "GV", slug: "gary-vaynerchuk", pillar: "Marketing and attention", question: "Where does the attention come from, and is it underpriced?", dimension: "Attention and distribution", color: "#9b5de5" },
-  { key: "martell", name: "Dan Martell", short: "Martell", initials: "DM", slug: "dan-martell", pillar: "People, hiring, and founder time", question: "Who does this, and what does it cost the founder's calendar?", dimension: "Team capacity and founder time", color: "#3d8bfd" },
-  { key: "wickman", name: "Gino Wickman", short: "Wickman", initials: "GW", slug: "gino-wickman", pillar: "Operations and scaling", question: "Can the business run this without the founder holding it together?", dimension: "Operational readiness", color: "#1fa67a" },
-  { key: "buffett", name: "Warren Buffett", short: "Buffett", initials: "WB", slug: "warren-buffett", pillar: "Money and capital", question: "What does it do to cash, risk, and long-term value?", dimension: "Downside and capital efficiency", color: "#4c6a92" },
-];
+export const SEATS = JSON.parse(fs.readFileSync(process.env.COUNCIL_SEATS_FILE || path.join(REPO_ROOT, ".claude", "runtime-seats.json"), "utf8"));
+if (!Array.isArray(SEATS) || SEATS.length < 4 || SEATS.length > 7 || new Set(SEATS.map((s) => s.key)).size !== SEATS.length || SEATS.some((s) => !/^[a-z0-9_]+$/.test(s.key) || !/^[a-z0-9-]+$/.test(s.slug) || typeof s.name !== "string")) throw new Error("Invalid injected advisor metadata");
 export const byKey = Object.fromEntries(SEATS.map((s) => [s.key, s]));
 
 const read = (p) => (fs.existsSync(p) ? fs.readFileSync(p, "utf8") : "");
