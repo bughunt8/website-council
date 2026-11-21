@@ -10,6 +10,8 @@ Your decision -> approved company identity and usage guard -> private Brain MCP 
 
 Model inference runs at the configured API provider, not in S3 or inside the advisor profile files. AWS runs the Node orchestration container. The original engine currently supports Anthropic API execution and per-seat/chair model selection.
 
+This feature branch adds [vote integrity and offer validation](docs/OFFER-VALIDATION.md). Open **Validate an offer** from the Council room to inspect the signed paid-pilot gate or request an optional buyer objection review. Simulation is off unless the operator approves the exact pitch for disclosure.
+
 ## Immutable runtime
 
 `Dockerfile` prebuilds UI and production dependencies. Runtime contains executable code only. It does not contain private Profit Rise information, live configuration, keys, database state, OAuth grants, or user sessions. Original public advisor data is packaged separately by `node scripts/profile-bundle.mjs`.

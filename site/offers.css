@@ -1,0 +1,7 @@
+.offer-page{max-width:52rem;margin:var(--space-8) auto}
+.offer-page h1,.offer-page h2,.offer-page p,.offer-page button,.offer-page select{margin-bottom:var(--space-4)}
+.offer-page section{border-top:1px solid var(--border);padding-top:var(--space-6);margin-top:var(--space-6)}
+.offer-page h1{font:400 clamp(2.5rem,7vw,4.8rem)/1.05 var(--font-display)}
+.offer-page h2{font:400 var(--text-xl)/1.2 var(--font-display)}
+.offer-page select{max-width:100%;min-height:44px}
+.offer-page li{margin-block:var(--space-3);overflow-wrap:anywhere}

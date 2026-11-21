@@ -7,3 +7,5 @@ The Node service runs profile-backed API requests, circulates arguments through 
 Provider keys, company corpus, OAuth state, profiles, config and sessions are external runtime inputs. Examples are explicitly optional and never substituted for a failed execution.
 
 Require signed identity, user session isolation, request limits, per-user attempt quotas, global concurrency limit, provider-call ceiling and external-disclosure approval before costs. No unauthenticated paid execution, automatic publication, memory write-back, customer-tenant mixing, or arbitrary model/shell/tool execution.
+
+The separate [offer-validation workflow](OFFER-VALIDATION.md) is not a company council. Its model input is an approved buyer-facing pitch, never the company evidence pack. Its investment gate is a deterministic check of independently reviewed commercial records, not a vote or a forecast.

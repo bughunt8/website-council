@@ -1,5 +1,7 @@
 # Council execution-service handover
 
+Feature-branch addendum: [vote integrity, pilot evidence and simulated objections](docs/OFFER-VALIDATION.md). This is a separate review candidate; the historical baseline and operational gates below remain unchanged.
+
 Implementation is paused at the owner's request on 2026-10-14. This public handover records the executable contract and remaining qualification without exposing company knowledge, host inventory, runtime credentials or private release manifests.
 
 The full operational handover is in private [Backend/HANDOVER.md](https://github.com/Profit-Rise-Consulting/Backend/blob/main/HANDOVER.md). Authorized operators should also read its decision/dependency/gap records and resume checklist. Private [Brain](https://github.com/Profit-Rise-Consulting/Brain) owns company memory. Neither private repository is mirrored into this public source tree.

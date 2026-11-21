@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>Validate an offer | Council</title>
+<link rel="stylesheet" href="./styles.css"><link rel="stylesheet" href="./offers.css">
+<script type="module" src="./offers.js"></script></head>
+<body><header class="header"><a class="brand" href="./">Council</a><a href="./">Back to the room</a></header>
+<main class="offer-page"><p class="eyebrow">Commercial review</p><h1>Validate an offer</h1>
+<p>A buyer panel can suggest questions. Only a company-signed, paid pilot can meet the fee-floor requirement for wider investment.</p>
+<p role="status" id="load">Loading your approved offers…</p><a id="login" href="/api/login?next=offers" hidden>Sign in to see your offers</a>
+<div id="workspace" hidden><label for="offer">Offer to review</label><select id="offer"></select>
+<section><p class="eyebrow">Pilot evidence</p><h2 id="gate"></h2><p id="reason"></p><p id="floor"></p></section>
+<section><p class="eyebrow">Optional research</p><h2>Find buyer objections</h2><p id="pitch"></p>
+<p id="panel-note"></p><button id="run" class="small-button" type="button" disabled>Run objection review</button>
+<p role="status" id="review-status"></p><ul id="objections"></ul></section></div></main></body></html>
