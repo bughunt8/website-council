@@ -510,7 +510,7 @@ async function onSeatDone(ev) {
     }
     sub = /^yes/i.test(parsed.moved) ? "Changed position" : "";
   } else {
-    const v = parsed.vote || "endorse";
+    const v = parsed.vote || "missing";
     tag = `Votes ${v}`;
 
   }
@@ -522,7 +522,7 @@ async function onSeatDone(ev) {
   chip.hidden = round === 3; // the vote stamp says it
   chip.className = "chip";
   if (round === 3) {
-    const v = parsed.vote || "endorse";
+    const v = parsed.vote || "missing";
     chip.textContent = v;
     chip.classList.add(v);
     $(`#seat-${seat} .vote`)?.remove();
@@ -612,7 +612,7 @@ function feedCard(round, seat, parsed) {
   d.dataset.round = round;
   const top = topOption(parsed.optionScores);
   const tgt = parsed.disagreeWith ? state.byKey[parsed.disagreeWith]?.short : "";
-  const what = round === 1 ? `${stanceWord(parsed.stance)}${top ? `, backs ${top.id}` : ""}` : round === 2 ? (tgt ? `vs ${tgt}` : "Debate") : `Votes ${parsed.vote || "endorse"}`;
+  const what = round === 1 ? `${stanceWord(parsed.stance)}${top ? `, backs ${top.id}` : ""}` : round === 2 ? (tgt ? `vs ${tgt}` : "Debate") : `Votes ${parsed.vote || "missing"}`;
   d.innerHTML = `<img class="av" src="${portrait(seat)}" alt=""><div><div class="h">${esc(s.short)}<span class="r">${esc(what)}</span></div><p>${esc(lineFor(round, parsed, 105))}</p></div>`;
   feedAppend(d);
 }
@@ -660,6 +660,7 @@ function onVerdict(ev) {
       <div class="actions"><button class="pill" type="button" data-pdf>Download PDF</button><button class="ghost" data-close>Back to the table</button></div>
     </div>
     <p class="v-call">${esc(v.call)}</p>
+    <p class="v-meta">${esc(v.ballot?.summary || "")}</p>
     <div class="v-grid">
       <div class="v-sec"><h3>Scores</h3><div class="v-opts">${state.options.map((o) => `
         <div class="opt ${o.id === v.recommended ? "lead" : ""}"><span class="id">${o.id}</span><span class="label">${esc(o.label)}</span><span class="val">${v.scores[o.id]?.score ?? "-"}</span><span class="bar"><i style="width:${(v.scores[o.id]?.score || 0) * 10}%"></i></span></div>`).join("")}</div>

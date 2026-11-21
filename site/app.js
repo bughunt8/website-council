@@ -169,6 +169,7 @@ $("#markdown-button").addEventListener("click", () => {
     `## ${v.label}`,
     "",
     clean(v.call),
+    v.ballot?.summary || "",
     "",
     "## Options and scores",
     "",
@@ -485,6 +486,12 @@ function openVerdict() {
   $("#verdict-body").innerHTML =
     `<span class="verdict-label">${esc(v.label)} · Option ${esc(v.recommended)} · Confidence ${esc(v.confidence)}/10</span><h2 id="verdict-dialog-title">${esc(setup.title)}</h2><p class="verdict-call">${esc(clean(v.call))}</p><div class="verdict-grid"><div><h3>Option scores</h3>${setup.options.map((o) => `<div class="option ${v.recommended === o.id ? "recommended" : ""}"><span>${esc(o.id)}</span><span>${esc(o.label)}</span><b>${esc(v.scores[o.id]?.score ?? "-")}/10</b></div>`).join("")}<p class="helper">Scores are the recorded council's judgments, not probabilities or verified forecasts.</p></div><div><h3>Why they landed here</h3><ul>${v.why.map((w) => `<li>${esc(clean(w.point))}<br><span class="tiny-label">Simulated ${esc(w.seat)} perspective</span></li>`).join("")}</ul></div><div><h3>The strongest objection</h3><p>${esc(clean(v.minority.quote))}</p><p class="helper">${esc(v.minority.seat)} seat. ${esc(clean(v.minority.would_have_to_be_true))}</p></div><div><h3>Next steps</h3><ul>${v.next_steps.map((n) => `<li><b>${esc(n.when)}</b> ${esc(clean(n.action))}</li>`).join("")}</ul></div></div><details class="verdict-detail"><summary>Conditions, tests, and the complete scorecard</summary><h3>Conditions</h3><ul>${v.conditions.map((c) => `<li>${esc(clean(c))}</li>`).join("")}</ul><h3>Cheapest test</h3><p>${esc(clean(v.cheapest_test))}</p><h3>Stop if</h3><p>${esc(clean(v.kill_criteria))}</p><h3>Revisit</h3><p>${esc(clean(v.revisit))}</p><h3>Where they fought</h3><ul>${v.fights.map((f) => `<li><b>${esc(clean(f.crux))}</b> ${esc(clean(f.story))}</li>`).join("")}</ul><h3>Scorecard</h3><div class="table-scroll"><table><thead><tr><th scope="col">Advisor</th><th scope="col">Weight</th>${setup.options.map((o) => `<th scope="col">Option ${esc(o.id)}</th>`).join("")}</tr></thead><tbody>${ev.seats.map((s) => `<tr><th scope="row">${esc(seatOf(s.key)?.name || s.key)}</th><td>${esc(s.weight)}</td>${setup.options.map((o) => `<td>${esc(s.optionScores?.[o.id] ?? "-")}</td>`).join("")}</tr>`).join("")}</tbody></table></div></details><p class="helper">${esc(clean(v.disclaimer))} Recorded example from Roast Room. Adaptation by Ronald Ng.</p>`;
   $("#pdf-error").hidden = true;
+  if (v.ballot) {
+    if (v.ballot.status === "no-quorum") $("#verdict-body .verdict-label").textContent = "No quorum · No resolution adopted";
+    const tally = document.createElement("p");
+    tally.textContent = v.ballot.summary;
+    $("#verdict-body .verdict-call").after(tally);
+  }
   if (state.session.kind === "live")
     $("#verdict-body").lastElementChild.textContent =
       `AI-assisted conclusion from a live run. Company evidence snapshot: ${state.session.evidence?.sha256 || "recorded"}. Review the conditions and dissent before acting.`;

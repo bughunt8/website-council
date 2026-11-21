@@ -2,6 +2,8 @@ import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 test("browser submits a new authenticated job and streams a conclusion instead of replaying a sample", async ({ page }) => {
   const sample = JSON.parse(fs.readFileSync("sessions/2026-10-10-example-raise-coaching-price/events.json"));
+  const v=sample.events.find(e=>e.type==="verdict").verdict;
+  Object.assign(v,{label:"NO QUORUM",recommended:null,confidence:null,support:null,call:"No Council resolution.",ballot:{status:"no-quorum",summary:"1/7 substantive votes; 4 required. 0 endorse, 0 amend, 1 dissent, 0 abstain, 5 missing, 1 invalid."}});
   const id = "2026-10-14-11111111-1111-1111-1111-111111111111";
   const submitted = [];
   await page.route("**/api/status", (r) => r.fulfill({ json: { kind: "live-node-service", executionEnabled: true } }));
@@ -22,4 +24,6 @@ test("browser submits a new authenticated job and streams a conclusion instead o
   await page.locator("#verdict-button").click();
   await expect(page.locator("#verdict-mode-label")).toContainText("Live company council");
   await expect(page.locator("#verdict-body")).toContainText("synthetic-company-evidence");
+  await expect(page.locator("#verdict-body")).toContainText("No resolution adopted");
+  await expect(page.locator("#verdict-body")).toContainText("5 missing, 1 invalid");
 });

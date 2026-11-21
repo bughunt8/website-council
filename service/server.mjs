@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { BrainClient } from "./brain.mjs";
+import { offersFor, offerView, panelEnabled, simulate } from "./offers.mjs";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const json = (res, status, value) => { res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" }); res.end(JSON.stringify(value)); };
 const secret = (name) => process.env[`${name}_FILE`] ? fs.readFileSync(process.env[`${name}_FILE`], "utf8").trim() : process.env[name] || "";
@@ -26,7 +27,7 @@ async function body(req) {
   let value = ""; for await (const part of req) { value += part; if (value.length > 14000) throw Object.assign(new Error("Decision brief is too large"), { status: 413 }); }
   try { return JSON.parse(value); } catch { throw Object.assign(new Error("Invalid JSON"), { status: 400 }); }
 }
-export function createService({ config, dataDir, engine, memory, identity = authenticate(config), staticDir = path.join(ROOT, "dist"), seats = [], demoDir = process.env.COUNCIL_DEMO_DATA_DIR }) {
+export function createService({ config, dataDir, engine, memory, identity = authenticate(config), panelTransport, staticDir = path.join(ROOT, "dist"), seats = [], demoDir = process.env.COUNCIL_DEMO_DATA_DIR }) {
   fs.mkdirSync(path.join(dataDir, "jobs"), { recursive: true, mode: 0o700 });
   const jobs = new Map(); let active = 0;
   const fileFor = (id) => path.join(dataDir, "jobs", `${id}.json`);
@@ -65,7 +66,31 @@ export function createService({ config, dataDir, engine, memory, identity = auth
       if (url.pathname.startsWith("/api/")) {
         let owner;
         try { owner = await identity(req); } catch { return json(res, 401, { error: "Sign in with an approved company identity." }); }
-        if (url.pathname === "/api/login") { res.writeHead(302, { location: "/" }); res.end(); return; }
+        if (url.pathname === "/api/login") { res.writeHead(302, { location: url.searchParams.get("next")==="offers"?"/offers.html":"/" }); res.end(); return; }
+        if (url.pathname === "/api/offers" && req.method === "GET") {
+          return json(res,200,{offers:offersFor(config,owner).map(o=>({...offerView(o),simulationEnabled:panelEnabled(config,o)}))});
+        }
+        const review = url.pathname.match(/^\/api\/offers\/([a-z0-9-]+)\/objections$/);
+        if (review && ["GET","POST"].includes(req.method)) {
+          const offer = offersFor(config,owner).find(o=>o.id===review[1]);
+          if (!offer) return json(res,404,{error:"Offer not found."});
+          const view = offerView(offer);
+          const key = crypto.createHash("sha256").update(JSON.stringify([owner,offer.id,view.pitchSha256,offer.panel])).digest("hex");
+          const file = path.join(dataDir, `offer-review-${key}.json`);
+          if (req.method === "GET") return json(res,200,{latest:fs.existsSync(file)?JSON.parse(fs.readFileSync(file,"utf8")):null});
+          if (req.headers.origin && req.headers.origin !== (config.publicOrigin || "https://council.profitriseco.com")) return json(res,403,{error:"Request origin refused."});
+          const input=await body(req);
+          if (!input || Object.keys(input).length !== 1 || input.pitchSha256 !== view.pitchSha256) return json(res,409,{error:"Offer changed or unsupported input. Reload the offer."});
+          if (!panelEnabled(config,offer)) return json(res,503,{error:"Simulation is not approved or configured."});
+          if (active >= config.limits.maxConcurrent) return json(res,429,{error:"Another review is running."});
+          reserve(owner); active++;
+          try {
+            const result=await simulate(offer,{model:config.models.seat,maxCalls:config.limits.maxProviderCalls,transport:panelTransport,signal:AbortSignal.timeout(120000)});
+            atomic(file,result);
+            return json(res,201,result);
+          } catch { return json(res,502,{error:"Objection review did not complete. No new result was saved."}); }
+          finally { active--; }
+        }
         if (url.pathname === "/api/councils" && req.method === "POST") {
           if (req.headers.origin && req.headers.origin !== (config.publicOrigin || "https://council.profitriseco.com")) return json(res, 403, { error: "Request origin refused." });
           const input = await body(req);

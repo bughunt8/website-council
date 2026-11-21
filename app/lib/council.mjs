@@ -149,7 +149,7 @@ Kill criteria: ${d.kill_criteria}
 Answer in your seat's voice, first person, under 140 words, in exactly this shape:
 
 SEAT: ${seat.short.toUpperCase()}
-VOTE: Endorse | Endorse with amendment | Dissent
+VOTE: Endorse | Endorse with amendment | Dissent | Abstain (choose exactly one, on its own line)
 OPTION SCORES: ${optLine(st)}   (given the resolution's conditions)
 FINAL SCORE: n/10   (your support for the draft resolution as written)
 FINAL PILLAR SCORE: n/10
@@ -285,7 +285,7 @@ FINAL WEIGHTED OPTION SCORES (computed, do not change): ${JSON.stringify(Object.
 Recommended option by score: ${recommended}. Band for it: ${bandFor(finalScores[recommended]?.score)}.
 Any seat at ruin risk likely: ${st.seats.filter((k) => st.cards[lastRound][k]?.parsed.ruin === "likely" || st.cards[2][k]?.parsed.ruin === "likely").join(", ") || "none"}.
 
-Write the verdict for the founder.
+Write the verdict for the founder. The computed ballot is authoritative: ${finalNumbers(st).ballot.summary} If no vote was held, describe the chair's advice, never a consensus or adopted decision. Never describe missing ballots or amendments as endorsements.
 - label: the band, or WAIT if the recommended option depends on an unmet prerequisite, or a cap from an override. If you change the band, say why in override_note; otherwise override_note is "".
 - call: one or two sentences the founder can act on, naming the option.
 - why: 3 to 5 arguments that carried the room, each tagged with the seat and the framework.
@@ -400,11 +400,11 @@ async function run(s) {
     emit(s, "phase", { phase: "skip3", label: `Quick mode: spread ${spread} and no ruin risk, so the vote round is skipped` });
   }
 
-  const { last, finalScores, recommended, spreadF, confidence, support, votes } = finalNumbers(st);
+  const { last, finalScores, recommended, spreadF, confidence, support, votes, ballot } = finalNumbers(st);
 
   emit(s, "phase", { phase: "verdict", label: "The Chair is writing the verdict" });
-  const v = await chairVerdict(st, finalScores, recommended);
-  st.verdict = { ...v, recommended, scores: finalScores, spread: spreadF, confidence, support, votes, disclaimer: DISCLAIMER };
+  const v = withheldVerdict(ballot) || await chairVerdict(st, finalScores, recommended);
+  st.verdict = { ...v, recommended, scores: finalScores, spread: spreadF, confidence, support, votes, ballot, disclaimer: DISCLAIMER };
   emit(s, "verdict", { verdict: st.verdict, seats: verdictSeats(st, last) });
   s.status = "done";
   emit(s, "usage", { usage: ai.currentUsage() });
@@ -421,19 +421,35 @@ export function finalNumbers(st) {
   const confs = st.seats.map((k) => st.cards[2][k]?.parsed.confidence ?? st.cards[1][k]?.parsed.confidence).filter((v) => typeof v === "number");
   const spreadF = fv.length ? Math.max(...fv) - Math.min(...fv) : 0;
   const confidence = confs.length ? Math.max(1, Math.min(10, Math.round((confs.reduce((a, b) => a + b, 0) / confs.length) * 2) - (spreadF >= 5 ? 1 : 0))) : null;
-  const support = last === 3 ? (() => {
+  const votes = last === 3 ? { endorse: 0, amend: 0, dissent: 0, abstain: 0, missing: 0, invalid: 0 } : null;
+  if (votes) for (const k of st.seats) votes[seatVote(st, k)]++;
+  const valid = votes ? votes.endorse + votes.amend + votes.dissent : 0;
+  const required = Math.floor(st.seats.length / 2) + 1;
+  const ballot = { valid, required, eligible: st.seats.length, status: !votes ? "not-held" : valid < required ? "no-quorum" : "quorate" };
+  ballot.summary = votes ? `${valid}/${st.seats.length} substantive votes; ${required} required. ${Object.entries(votes).map(([k,n]) => `${n} ${k}`).join(", ")}.` : "No formal vote held.";
+  const support = ballot.status === "quorate" ? (() => {
     let n = 0, d = 0;
-    for (const k of st.seats) { const v = st.cards[3][k]?.parsed.finalScore; if (typeof v === "number") { n += v * st.weights[k].weight; d += st.weights[k].weight; } }
+    for (const k of st.seats) { const v = st.cards[3][k]?.parsed.finalScore; if (["endorse","amend","dissent"].includes(seatVote(st,k)) && typeof v === "number") { n += v * st.weights[k].weight; d += st.weights[k].weight; } }
     return d ? Math.round((n / d) * 10) / 10 : null;
   })() : null;
-  const votes = last === 3 ? st.seats.reduce((acc, k) => { const v = st.cards[3][k]?.parsed.vote || "endorse"; acc[v] = (acc[v] || 0) + 1; return acc; }, {}) : null;
-  return { last, finalScores, recommended, spreadF, confidence, support, votes };
+  return { last, finalScores, recommended: ballot.status === "no-quorum" ? null : recommended, spreadF,
+    confidence: ballot.status === "no-quorum" ? null : confidence, support, votes, ballot };
+}
+
+function seatVote(st, key) {
+  const vote = st.cards[3]?.[key]?.parsed?.vote;
+  return !vote ? "missing" : ["endorse","amend","dissent","abstain","missing"].includes(vote) ? vote : "invalid";
+}
+
+export function withheldVerdict(ballot) {
+  if (ballot.status !== "no-quorum") return null;
+  return { label: "NO QUORUM", call: "No Council resolution. Too few valid votes were cast to claim consensus.", override_note: "", why: [], fights: [], minority: {seat:"",quote:"",would_have_to_be_true:""}, amendments: [], conditions: [], next_steps: [{when:"Before relying on this decision", action:"Review incomplete ballots and request a new vote."}], cheapest_test:"Review the recorded votes.", kill_criteria:"Do not treat option scores as an adopted resolution.", revisit:"After a quorate vote." };
 }
 
 export function verdictSeats(st, last) {
   return st.seats.map((k) => ({
     key: k, weight: st.weights[k].weight,
-    stance: st.cards[last][k]?.parsed.vote || st.cards[2][k]?.parsed.stance,
+    stance: last === 3 ? seatVote(st, k) : st.cards[2][k]?.parsed.stance,
     optionScores: st.cards[last][k]?.parsed.optionScores,
     pillar: st.cards[last][k]?.parsed.pillar ?? st.cards[2][k]?.parsed.pillar,
     moved: st.cards[2][k]?.parsed.moved,
@@ -468,9 +484,10 @@ function verdictMarkdown(st) {
   const opt = (id) => st.options.find((o) => o.id === id)?.label || id;
   const L = [];
   L.push(`# Roast Room: ${st.title}`, "", `${new Date().toISOString().slice(0, 10)} · Seats: ${st.seats.map((k) => byKey[k].short).join(", ")} · Rounds: ${st.rounds.length} · Mode: ${st.mode}`, "");
-  L.push(`## Verdict: ${v.label} (Option ${v.recommended}: ${opt(v.recommended)})`, "", `**The call:** ${v.call}`, "");
+  L.push(`## Verdict: ${v.label}${v.recommended ? ` (Option ${v.recommended}: ${opt(v.recommended)})` : ""}`, "", `**The call:** ${v.call}`, "");
   L.push(`Option scores: ${st.options.map((o) => `${o.id} ${v.scores[o.id]?.score ?? "-"}`).join(" · ")}${v.support != null ? ` · Support for the resolution ${v.support}/10` : ""} · Confidence ${v.confidence ?? "-"}/10 · Spread ${v.spread}`);
   if (v.override_note) L.push("", v.override_note);
+  if (v.ballot) L.push("", v.ballot.summary);
   L.push("", "Math: " + st.options.map((o) => `${o.id} ${v.scores[o.id]?.math} = ${v.scores[o.id]?.score}`).join(" · "));
   L.push("", "## Why the council landed here", "", ...v.why.map((w) => `- ${w.point} (${w.seat}, ${w.framework})`));
   L.push("", "## Where they fought", "", ...v.fights.map((f) => `- **${f.crux}** ${f.story}`));

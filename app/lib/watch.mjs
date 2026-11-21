@@ -10,7 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { SEATS, byKey, parseCard, checkQuotes } from "./seats.mjs";
 import { SESSIONS_DIR } from "./env.mjs";
-import { optionScores, finalNumbers, verdictSeats, DISCLAIMER } from "./council.mjs";
+import { optionScores, finalNumbers, verdictSeats, withheldVerdict, DISCLAIMER } from "./council.mjs";
 
 const live = new Map(); // folder name -> session
 const STALE_MS = 3 * 60 * 60 * 1000; // a folder untouched this long is an abandoned council
@@ -162,14 +162,14 @@ function sync(x) {
   if (x.step === "verdict") {
     const v = readJson(f("verdict.json"));
     if (!v) return;
-    const { last, finalScores, recommended, spreadF, confidence, support, votes } = finalNumbers(st);
+    const { last, finalScores, recommended, spreadF, confidence, support, votes, ballot } = finalNumbers(st);
     const verdict = {
       label: v.label || "RESHAPE", call: v.call || "", override_note: v.override_note || "",
       why: v.why || [], fights: v.fights || [], minority: v.minority || { seat: "", quote: "", would_have_to_be_true: "" },
       amendments: v.amendments || [], conditions: v.conditions || [],
       next_steps: (v.next_steps || []).map((n) => (typeof n === "string" ? { when: "", action: n } : n)),
       cheapest_test: v.cheapest_test || "", kill_criteria: v.kill_criteria || "", revisit: v.revisit || "",
-      recommended: v.recommended || recommended, scores: finalScores, spread: spreadF, confidence, support, votes, disclaimer: DISCLAIMER,
+      ...withheldVerdict(ballot), recommended: ballot.status === "no-quorum" ? null : v.recommended || recommended, scores: finalScores, spread: spreadF, confidence, support, votes, ballot, disclaimer: DISCLAIMER,
     };
     emit(x, "verdict", { verdict, seats: verdictSeats(st, last) });
     x.step = "done";
