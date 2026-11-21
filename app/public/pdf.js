@@ -149,6 +149,7 @@ export async function downloadVerdictPdf({ setup, verdict: ev, byKey, id }) {
   by += callLines.length * lh(12.5) + 8;
   font(9.5, "normal", C.mute); doc.text(meta, M + 16, by + 9.5);
   y += boxH + 8;
+  if (v.ballot) para(v.ballot.summary, { size: 9.5, color: C.soft, gap: 6 });
 
   // ---------------------------------------------------------------- scores
   section("Scores");
@@ -193,7 +194,7 @@ export async function downloadVerdictPdf({ setup, verdict: ev, byKey, id }) {
       font(10, "semibold", C.ink); doc.text(info.name || s.key, x, y + 13); x += cols[0].w;
       font(10, "normal", C.soft); doc.text(String(s.weight ?? "-"), x + cols[1].w / 2, y + 13, { align: "center" }); x += cols[1].w;
       for (const o of options) { font(10, "semibold", C.ink); doc.text(String(s.optionScores?.[o.id] ?? "-"), x + 20, y + 13, { align: "center" }); x += 40; }
-      if (showVote) { font(9.5, "normal", C.soft); doc.text(String(s.stance || "endorse").replace(/^./, (c) => c.toUpperCase()), x, y + 13); }
+      if (showVote) { font(9.5, "normal", C.soft); doc.text(String(s.stance || "missing").replace(/^./, (c) => c.toUpperCase()), x, y + 13); }
       y += 20; doc.setDrawColor(...C.rule); doc.line(M, y, W - M, y); y += 2;
     }
   }

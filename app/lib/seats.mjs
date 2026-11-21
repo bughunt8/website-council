@@ -79,8 +79,10 @@ export function parseCard(text, optionIds) {
   const ruin = (field(text, "RUIN RISK").match(/none|possible|likely/i) || [""])[0].toLowerCase();
   const disagree = field(text, "I DISAGREE MOST WITH");
   const target = SEATS.find((s) => new RegExp(`\\b(${s.short}|${s.name.split(" ").pop()})\\b`, "i").test(disagree.slice(0, 40)));
-  const voteRaw = field(text, "VOTE");
-  const vote = /dissent/i.test(voteRaw) ? "dissent" : /amend/i.test(voteRaw) ? "amend" : /endorse/i.test(voteRaw) ? "endorse" : "";
+  const fields = [...text.matchAll(/(?:^|[·|])[ \t]*\**VOTE\**[ \t]*:[ \t]*([^\n]*)/gim)];
+  const voteRaw = fields[0]?.[1].replace(/\*/g, "").trim().toLowerCase();
+  const vote = !fields.length ? "missing" : fields.length !== 1 ? "invalid" :
+    new Map([["endorse", "endorse"], ["endorse with amendment", "amend"], ["dissent", "dissent"], ["abstain", "abstain"]]).get(voteRaw) || "invalid";
   return {
     stance,
     call: field(text, "THE CALL"),

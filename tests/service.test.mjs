@@ -100,7 +100,7 @@ test("Brain source and semantic guards reject foreign or keyword-only results", 
   const semantic = new BrainClient({ ...opts, fetcher: mcp([{ source_id: "profit-rise-company", slug: "company", cosine: 0.8, chunk_text: "Synthetic company context" }]) });
   const pack = await semantic.recall("Decision"); assert.equal(pack.passages[0].reference, "profit-rise-company/company"); assert.match(pack.sha256, /^[a-f0-9]{64}$/);
 });
-test("actual profile engine executes discussion rounds and chair with one frozen company pack, using mock provider transport", async () => {
+for (const missing of [false,true]) test(`actual profile engine with synthetic evidence: ${missing ? "missing votes cannot produce chair consensus" : "quorate discussion and chair verdict"}`, async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "council-engine-"));
   process.env.COUNCIL_SESSIONS_DIR = root;
   const engine = await import("../app/lib/council.mjs");
@@ -114,7 +114,9 @@ test("actual profile engine executes discussion rounds and chair with one frozen
   const seen = [];
   const transport = {
     async stream(request) {
-      seen.push(Array.isArray(request.system) ? request.system.map((b) => b.text).join("\n") : request.system); const card = cards[streams++]; request.onText(card.text); return card.text;
+      seen.push(Array.isArray(request.system) ? request.system.map((b) => b.text).join("\n") : request.system);
+      const card = cards[streams++]; const text = missing && card.round===3 ? (streams===21 ? "VOTE: Dissent" : "No ballot supplied.") : card.text;
+      request.onText(text); return text;
     },
     async json(request) {
       seen.push(Array.isArray(request.system) ? request.system.map((b) => b.text).join("\n") : request.system); structured++;
@@ -130,7 +132,12 @@ test("actual profile engine executes discussion rounds and chair with one frozen
   try {
     const run = engine.createCouncil("Synthetic company decision, not a live model request.", "full");
     await engine.executeCouncil(run, { evidence, maxCalls: 25, transport, safeErrors: true });
-    assert.equal(run.status, "done"); assert.equal(streams, 21); assert.equal(structured, 4);
+    assert.equal(run.status, "done"); assert.equal(streams, 21); assert.equal(structured, missing ? 3 : 4);
+    if (missing) {
+      const v=run.events.find(e=>e.type==="verdict").verdict;
+      assert.equal(v.label,"NO QUORUM");assert.equal(v.recommended,null);assert.equal(v.confidence,null);
+      assert.deepEqual(v.votes,{endorse:0,amend:0,dissent:1,abstain:0,missing:6,invalid:0});
+    }
     assert.equal(run.events.filter((e) => e.type === "seat_done").length, 21);
     assert.ok(run.events.some((e) => e.type === "verdict"));
     assert.ok(seen.every((s) => s.includes(evidence.sha256) && s.includes("Synthetic company evidence")));
